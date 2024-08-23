@@ -1,0 +1,133 @@
+<mujoco model="hopper_model">
+  <compiler angle="radian" meshdir="meshes" autolimits="true" />
+  <option cone="elliptic" impratio="100" />
+  <statistic center="0 0 0.1" extent="0.8"/>
+  
+  <default>
+    <default class="hopper">
+      <geom friction="0.8" margin="0.001" condim="1"/>
+      <joint axis="0 1 0" damping="0.1" armature="0.01" frictionloss="0.2"/>
+      <motor ctrlrange="-30 30"/>
+      <default class="hip">
+        <joint range="0 1.57"/>
+      </default>
+      <default class="knee">
+        <joint range="-3.14 0"/>
+      </default>
+      <default class="visual">
+        <geom type="mesh" contype="0" conaffinity="0" group="2"/>
+      </default>
+      <default class="collision">
+        <geom group="3"/>
+        <!-- <default class="foot">
+          <geom size="0.022" pos="-0.002 0 -0.213" priority="1" condim="6"
+            friction="0.4 0.02 0.01"/>
+        </default> -->
+      </default>
+    </default>
+  </default>
+
+  <keyframe>
+    <key name="0" qpos="0 0.9 -1.8" />
+  </keyframe>
+
+  <worldbody>
+    <light pos="0 0 1.5" dir="0 0 -1" directional="true"/>
+    <geom name="floor" size="0 0 0.05" type="plane" material="groundplane"/>
+    <!-- TODO -->
+    <body name="Base" pos="0 0 0.5">
+      <joint name="base_joint" type="slide" axis="0 0 1" range="-0.2 1.5" />
+      <inertial 
+        pos="-0.0054 0.00194 -0.000105" 
+        quat="0.497014 0.499245 0.505462 0.498237"
+        mass="0.678"
+        diaginertia="0.00088403 0.000596003 0.000479967" />
+      
+      <geom mesh="Torso" material="metal" class="visual" />
+      <geom size="0.046 0.02" pos="0 0.08 0" quat="1 1 0 0" type="cylinder" class="collision" />
+      
+      <site name="imu" pos="0 0 0" />
+      
+      <body name="Thigh" pos="0 0.0955 0">
+        <joint name="thigh_joint" class="hip" />
+        <inertial 
+          pos="-0.00374 -0.0223 -0.0327" 
+          quat="0.829533 0.0847635 -0.0200632 0.551623"
+          mass="1.152"
+          diaginertia="0.00594973 0.00584149 0.000878787" />
+        
+        <geom mesh="Thigh" material="metal" class="visual" />
+        <geom size="0.1065 0.01225 0.017" pos="0 0 -0.1065" quat="0.707107 0 0.707107 0"
+          type="box" class="collision" />
+        
+        <body name="Shank" pos="0 0 -0.213">
+          <joint name="calf_joint" class="knee" />
+          <inertial 
+            pos="0.00629595 -0.000622121 -0.141417"
+            quat="0.710672 0.00154099 -0.00450087 0.703508"
+            mass="0.241352" 
+            diaginertia="0.0014901 0.00146356 5.31397e-05" />
+          
+          <geom mesh="Shank" material="metal" class="visual" />
+          <geom size="0.012 0.0925" pos="0.008 0 -0.06" quat="0.994493 0 -0.104807 0"
+            type="cylinder" class="collision" />
+          
+          <!-- <geom pos="0 0 -0.213" mesh="Foot" class="visual" material="black" />
+          <body name="Foot" pos="0 0 -0.213">
+            <geom name="FL" class="foot" pos="-0.002 0 0"/>
+            <site name="foot_site" pos="-0.002 0 0" size="0.025"/>
+          </body> -->
+        </body>
+      </body>
+    </body>
+  </worldbody>
+
+  <actuator>
+    <motor class="hip" name="thigh" joint="thigh_joint" />
+    <motor class="knee" name="calf" joint="calf_joint" />
+  </actuator>
+
+  <sensor>
+    <jointpos name="thigh_pos" joint="thigh_joint" />
+    <jointpos name="calf_pos" joint="calf_joint" />
+
+    <jointvel name="thigh_vel" joint="thigh_joint" />
+    <jointvel name="calf_vel" joint="calf_joint" />
+
+    <jointactuatorfrc name="thigh_torque" joint="thigh_joint" noise="0.01" />
+    <jointactuatorfrc name="calf_torque" joint="calf_joint" noise="0.01" />
+
+    <framequat name="imu_quat" objtype="site" objname="imu" />
+    <gyro name="imu_gyro" site="imu" />
+    <accelerometer name="imu_acc" site="imu" />
+    
+    <framepos name="frame_pos" objtype="site" objname="imu" />
+    <framelinvel name="frame_vel" objtype="site" objname="imu" />
+
+    <!-- <touch name="foot_force" site="foot_site" noise="0.01" /> -->
+  </sensor>
+
+  <visual>
+    <headlight diffuse="0.6 0.6 0.6" ambient="0.3 0.3 0.3" specular="0 0 0"/>
+    <rgba haze="0.15 0.25 0.35 1"/>
+    <global azimuth="-130" elevation="-20"/>
+  </visual>
+
+  <asset>
+    <texture type="skybox" builtin="gradient" rgb1="0.3 0.5 0.7" rgb2="0 0 0" width="512" height="3072"/>
+    <texture type="2d" name="groundplane" builtin="checker" mark="edge" rgb1="0.2 0.3 0.4" rgb2="0.1 0.2 0.3"
+      markrgb="0.8 0.8 0.8" width="300" height="300"/>
+    <material name="groundplane" texture="groundplane" texuniform="true" texrepeat="5 5" reflectance="0.2"/>
+
+    <material name="metal" rgba=".9 .95 .95 1" />
+    <material name="black" rgba="0 0 0 1" />
+    <material name="white" rgba="1 1 1 1" />
+    <material name="gray" rgba="0.671705 0.692426 0.774270 1" />
+
+    <mesh file="Torso.obj" />
+    <mesh file="Thigh.obj" />
+    <mesh file="Shank.obj" />
+    <!-- <mesh file="Foot.obj" /> -->
+  </asset>
+
+</mujoco>

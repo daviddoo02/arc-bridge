@@ -1,0 +1,375 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- This URDF was automatically created by SolidWorks to URDF Exporter! Originally created by Stephen Brawner (brawner@gmail.com) 
+     Commit Version: 1.6.0-4-g7f85cfe  Build Version: 1.6.7995.38578
+     For more information, please see http://wiki.ros.org/sw_urdf_exporter -->
+<robot
+  name="PEA_leg_assem.SLDASM">
+  <link
+    name="Torso">
+    <inertial>
+      <origin
+        xyz="-2.1048E-05 0.020151 0.015056"
+        rpy="0 0 0" />
+      <mass
+        value="0.3612" />
+      <inertia
+        ixx="0.00017045"
+        ixy="6.4163E-07"
+        ixz="-1.2401E-08"
+        iyy="0.00078888"
+        iyz="1.0301E-06"
+        izz="0.00092343" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="./meshes/Torso.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.75294 0.75294 0.75294 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="./meshes/Torso.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <link
+    name="Thigh">
+    <inertial>
+      <origin
+        xyz="0.027216 -0.0025382 -0.0089058"
+        rpy="0 0 0" />
+      <mass
+        value="0.43122" />
+      <inertia
+        ixx="0.00023052"
+        ixy="-5.8304E-06"
+        ixz="-4.9731E-06"
+        iyy="0.0010696"
+        iyz="1.4434E-06"
+        izz="0.0012471" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="./meshes/Thigh.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.75294 0.75294 0.75294 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="./meshes/Thigh.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="Hip"
+    type="revolute">
+    <origin
+      xyz="0 0.026 0"
+      rpy="-1.5708 -0.070972 3.1416" />
+    <parent
+      link="Torso" />
+    <child
+      link="Thigh" />
+    <axis
+      xyz="0 0 1" />
+    <limit
+      lower="0"
+      upper="0"
+      effort="0"
+      velocity="0" />
+  </joint>
+  <link
+    name="Shank">
+    <inertial>
+      <origin
+        xyz="-0.013233 -0.012829 -0.073706"
+        rpy="0 0 0" />
+      <mass
+        value="0.11665" />
+      <inertia
+        ixx="0.00030474"
+        ixy="-2.0633E-08"
+        ixz="-1.2207E-07"
+        iyy="0.000294"
+        iyz="-4.6853E-05"
+        izz="1.2837E-05" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="./meshes/Shank.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.75294 0.75294 0.75294 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="./meshes/Shank.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="Knee"
+    type="continuous">
+    <origin
+      xyz="0.22 0 0"
+      rpy="1.5572 1.5708 0" />
+    <parent
+      link="Thigh" />
+    <child
+      link="Shank" />
+    <axis
+      xyz="1 0 0" />
+  </joint>
+  <link
+    name="Motor_link">
+    <inertial>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <mass
+        value="0" />
+      <inertia
+        ixx="0"
+        ixy="0"
+        ixz="0"
+        iyy="0"
+        iyz="0"
+        izz="0" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="./meshes/Motor_link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="1 1 1 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="./meshes/Motor_link.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="motor"
+    type="continuous">
+    <origin
+      xyz="0 0 0"
+      rpy="-1.5708 0.5589 -3.1416" />
+    <parent
+      link="Torso" />
+    <child
+      link="Motor_link" />
+    <axis
+      xyz="0 0 1" />
+  </joint>
+  <link
+    name="Coupler">
+    <inertial>
+      <origin
+        xyz="-0.013044 -7.4544E-06 -0.095486"
+        rpy="0 0 0" />
+      <mass
+        value="0.11573" />
+      <inertia
+        ixx="8.5043E-05"
+        ixy="1.0661E-08"
+        ixz="-2.9036E-07"
+        iyy="8.4442E-05"
+        iyz="2.5268E-07"
+        izz="5.2399E-06" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="./meshes/Coupler.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.75294 0.75294 0.75294 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="./meshes/Coupler.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="coupler_top"
+    type="continuous">
+    <origin
+      xyz="0.024013 0.017983 0"
+      rpy="2.4228 -1.5708 0" />
+    <parent
+      link="Motor_link" />
+    <child
+      link="Coupler" />
+    <axis
+      xyz="1 0 0" />
+  </joint>
+  <link
+    name="Cart">
+    <inertial>
+      <origin
+        xyz="0.023509 -0.0049286 0.00022012"
+        rpy="0 0 0" />
+      <mass
+        value="0.021375" />
+      <inertia
+        ixx="1.7696E-06"
+        ixy="-1.8319E-07"
+        ixz="-3.0251E-09"
+        iyy="1.899E-06"
+        iyz="-4.5001E-09"
+        izz="2.4276E-06" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="./meshes/Cart.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.75294 0.75294 0.75294 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="./meshes/Cart.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="spring"
+    type="prismatic">
+    <origin
+      xyz="-0.013106 0 -0.14214"
+      rpy="0 1.5708 0" />
+    <parent
+      link="Coupler" />
+    <child
+      link="Cart" />
+    <axis
+      xyz="1 0 0" />
+    <limit
+      lower="0"
+      upper="0"
+      effort="0"
+      velocity="0" />
+  </joint>
+  <link
+    name="PEA">
+    <inertial>
+      <origin
+        xyz="0.051276 -1.9082E-17 0.00016202"
+        rpy="0 0 0" />
+      <mass
+        value="0.013879" />
+      <inertia
+        ixx="3.8003E-07"
+        ixy="-6.9229E-22"
+        ixz="7.6858E-07"
+        iyy="1.2558E-05"
+        iyz="1.3666E-23"
+        izz="1.2215E-05" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="./meshes/PEA.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.89804 0.91765 0.92941 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="./meshes/PEA.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="pea_joint"
+    type="continuous">
+    <origin
+      xyz="0.015469 -0.017 0"
+      rpy="-1.5708 0 -2.4193" />
+    <parent
+      link="Cart" />
+    <child
+      link="PEA" />
+    <axis
+      xyz="0 1 0" />
+  </joint>
+</robot>

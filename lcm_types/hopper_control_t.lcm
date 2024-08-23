@@ -1,0 +1,14 @@
+package robot_lcm;
+
+struct hopper_control_t
+{
+    int64_t  timestamp;
+
+    double   qj_tau[2];
+
+    double   qj_pos[2];
+    double   qj_vel[2];
+
+    double   kp[2];
+    double   kd[2];
+}

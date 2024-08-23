@@ -1,0 +1,143 @@
+import lcm
+import mujoco
+
+from threading import Thread
+
+from lcm_types.robot_lcm import *
+from utils import *
+
+MOTOR_SENSOR_NUM = 3
+
+class Lcm2MujocoBridge:
+
+    def __init__(self, mj_model, mj_data, topic_state, topic_cmd):
+        self.mj_model = mj_model
+        self.mj_data = mj_data
+        
+        self.topic_state = topic_state
+        self.topic_cmd = topic_cmd
+
+        self.num_motor = self.mj_model.nu
+        self.dim_motor_sensor = MOTOR_SENSOR_NUM * self.num_motor
+        self.have_imu = False
+        self.have_frame_sensor = False
+        self.dt = self.mj_model.opt.timestep
+
+        # Check sensors
+        for i in range(self.dim_motor_sensor, self.mj_model.nsensor):
+            name = mujoco.mj_id2name(self.mj_model,
+                                     mujoco._enums.mjtObj.mjOBJ_SENSOR, i)
+            if name == "imu_quat":
+                self.have_imu_ = True
+            if name == "frame_pos":
+                self.have_frame_sensor_ = True
+
+        self.printSceneInformation()
+
+        # LCM messages
+        self.lc = lcm.LCM()
+        self.low_state = eval(self.topic_state+"_t")()
+        
+        self.low_cmd_suber = self.lc.subscribe(self.topic_cmd, self.lowCmdHandler)
+        self.low_cmd_suber.set_queue_capacity(1) # TODO verify this
+        
+        lcm_handle_thread = Thread(target=self.lcmHandleThread)
+        lcm_handle_thread.start()
+
+    def lcmHandleThread(self):
+        """
+        Function to read the lcm data (and to stop the LCM instance on Cntl + C)
+        """
+        try:
+            while True:
+                self.lc.handle()
+
+        except Exception:
+            self.lc.unsubscribe(self.low_cmd_suber)
+
+    def lowCmdHandler(self, channel, data):
+        if self.mj_data != None:
+            msg = eval(self.topic_cmd+"_t").decode(data)
+            for i in range(self.num_motor):
+                self.mj_data.ctrl[i] = msg.qj_tau[i] +\
+                                       msg.kp[i] * (msg.qj_pos[i] - self.mj_data.sensordata[i]) +\
+                                       msg.kd[i] * (msg.qj_vel[i] - self.mj_data.sensordata[i + self.num_motor])
+
+    def publishLowState(self):
+        if self.mj_data != None:
+            for i in range(self.num_motor):
+                self.low_state.qj_pos[i] = self.mj_data.sensordata[i]
+                self.low_state.qj_vel[i] = self.mj_data.sensordata[i + self.num_motor]
+                self.low_state.qj_tau[i] = self.mj_data.sensordata[i + 2 * self.num_motor]
+
+            if self.have_frame_sensor_:
+                self.low_state.quaternion[0] = self.mj_data.sensordata[self.dim_motor_sensor + 0]
+                self.low_state.quaternion[1] = self.mj_data.sensordata[self.dim_motor_sensor + 1]
+                self.low_state.quaternion[2] = self.mj_data.sensordata[self.dim_motor_sensor + 2]
+                self.low_state.quaternion[3] = self.mj_data.sensordata[self.dim_motor_sensor + 3]
+                
+                rpy = quat_to_rpy(Quaternion(*self.low_state.quaternion))
+                self.low_state.rpy[0] = rpy[0]
+                self.low_state.rpy[1] = rpy[1]
+                self.low_state.rpy[2] = rpy[2]                
+
+                self.low_state.omega[0] = self.mj_data.sensordata[self.dim_motor_sensor + 4]
+                self.low_state.omega[1] = self.mj_data.sensordata[self.dim_motor_sensor + 5]
+                self.low_state.omega[2] = self.mj_data.sensordata[self.dim_motor_sensor + 6]
+
+                # self.low_state.imu_state.accelerometer[
+                #     0] = self.mj_data.sensordata[self.dim_motor_sensor + 7]
+                # self.low_state.imu_state.accelerometer[
+                #     1] = self.mj_data.sensordata[self.dim_motor_sensor + 8]
+                # self.low_state.imu_state.accelerometer[
+                #     2] = self.mj_data.sensordata[self.dim_motor_sensor + 9]
+
+                self.low_state.position[0] = self.mj_data.sensordata[self.dim_motor_sensor + 10]
+                self.low_state.position[1] = self.mj_data.sensordata[self.dim_motor_sensor + 11]
+                self.low_state.position[2] = self.mj_data.sensordata[self.dim_motor_sensor + 12]
+
+                self.low_state.velocity[0] = self.mj_data.sensordata[self.dim_motor_sensor + 13]
+                self.low_state.velocity[1] = self.mj_data.sensordata[self.dim_motor_sensor + 14]
+                self.low_state.velocity[2] = self.mj_data.sensordata[self.dim_motor_sensor + 15]
+
+                # self.low_state.foot_force = self.mj_data.sensordata[-1]*100
+
+                self.lc.publish(self.topic_state, self.low_state.encode())
+
+    def printSceneInformation(self):
+        print(" ")
+
+        print("<<------------- Link ------------->> ")
+        for i in range(self.mj_model.nbody):
+            name = mujoco.mj_id2name(self.mj_model,
+                                     mujoco._enums.mjtObj.mjOBJ_BODY, i)
+            if name:
+                print("link_index:", i, ", name:", name)
+        print(" ")
+
+        print("<<------------- Joint ------------->> ")
+        for i in range(self.mj_model.njnt):
+            name = mujoco.mj_id2name(self.mj_model,
+                                     mujoco._enums.mjtObj.mjOBJ_JOINT, i)
+            if name:
+                print("joint_index:", i, ", name:", name)
+        print(" ")
+
+        print("<<------------- Actuator ------------->>")
+        for i in range(self.mj_model.nu):
+            name = mujoco.mj_id2name(self.mj_model,
+                                     mujoco._enums.mjtObj.mjOBJ_ACTUATOR, i)
+            if name:
+                print("actuator_index:", i, ", name:", name)
+        print(" ")
+
+        print("<<------------- Sensor ------------->>")
+        index = 0
+        for i in range(self.mj_model.nsensor):
+            name = mujoco.mj_id2name(self.mj_model,
+                                     mujoco._enums.mjtObj.mjOBJ_SENSOR, i)
+            if name:
+                print("sensor_index:", index, ", name:", name, ", dim:",
+                      self.mj_model.sensor_dim[i])
+            index = index + self.mj_model.sensor_dim[i]
+        print(" ")
