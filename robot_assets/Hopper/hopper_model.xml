@@ -9,10 +9,10 @@
       <joint axis="0 1 0" damping="0.1" armature="0.01" frictionloss="0.2"/>
       <motor ctrlrange="-30 30"/>
       <default class="hip">
-        <joint range="0 1.57"/>
+        <joint range="1.57 3.14"/>
       </default>
       <default class="knee">
-        <joint range="-3.14 0"/>
+        <joint range="-1.57 1.57"/>
       </default>
       <default class="visual">
         <geom type="mesh" contype="0" conaffinity="0" group="2"/>
@@ -28,7 +28,7 @@
   </default>
 
   <keyframe>
-    <key name="0" qpos="0 0.9 -1.8" />
+    <key name="0" qpos="0 2.35 0" />
   </keyframe>
 
   <worldbody>
