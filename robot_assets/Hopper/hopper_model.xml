@@ -34,43 +34,44 @@
   <worldbody>
     <light pos="0 0 1.5" dir="0 0 -1" directional="true"/>
     <geom name="floor" size="0 0 0.05" type="plane" material="groundplane"/>
-    <!-- TODO -->
+
     <body name="Base" pos="0 0 0.5">
       <joint name="base_joint" type="slide" axis="0 0 1" range="-0.2 1.5" />
+      <geom type="mesh" mesh="Torso" material="metal" class="visual" />
+      <!-- ! Match initial frame to the center of collision -->
+      <geom size="0.046 0.02" pos="0 0 0" quat="1 0 0 0" type="cylinder" class="collision" />
       <inertial 
-        pos="-0.0054 0.00194 -0.000105" 
-        quat="0.497014 0.499245 0.505462 0.498237"
-        mass="0.678"
-        diaginertia="0.00088403 0.000596003 0.000479967" />
-      
-      <geom mesh="Torso" material="metal" class="visual" />
-      <geom size="0.046 0.02" pos="0 0.08 0" quat="1 1 0 0" type="cylinder" class="collision" />
+        pos="0 0 0" 
+        quat="1 0 0 0"
+        mass="0.3612"
+        diaginertia="0.00017045 0.00078888 0.00092343" />
       
       <site name="imu" pos="0 0 0" />
       
-      <body name="Thigh" pos="0 0.0955 0">
-        <joint name="thigh_joint" class="hip" />
+      <body name="Thigh" pos="0 0.026 0" quat="0.0250846 0.0250897 -0.706663 0.70666">
+        <!-- ! The joint axis is somehow misplaced -->
+        <joint name="thigh_joint" class="hip" axis="0 0 1"/>
+        <!-- ! Match initial frame to the center of collision -->
+        <geom type="mesh" mesh="Thigh" material="metal" class="visual"/>
+        <geom size="0.1065 0.01225 0.017" pos="0.1 0 0" quat="1 0 0 0" type="box" class="collision" />
         <inertial 
-          pos="-0.00374 -0.0223 -0.0327" 
-          quat="0.829533 0.0847635 -0.0200632 0.551623"
-          mass="1.152"
-          diaginertia="0.00594973 0.00584149 0.000878787" />
+          pos="0.1 0 0" 
+          quat="1 0 0 0"
+          mass="0.43122"
+          diaginertia="0.00023052 0.0010696 0.0012471" />
+
         
-        <geom mesh="Thigh" material="metal" class="visual" />
-        <geom size="0.1065 0.01225 0.017" pos="0 0 -0.1065" quat="0.707107 0 0.707107 0"
-          type="box" class="collision" />
-        
-        <body name="Shank" pos="0 0 -0.213">
-          <joint name="calf_joint" class="knee" />
+        <body name="Shank" pos="0.22 0 0" quat="0.503387 0.496588 0.503388 -0.49659">
+          <!-- ! The joint axis is somehow misplaced -->
+          <joint name="calf_joint" class="knee" axis="1 0 0"/>
+          <!-- ! Match initial frame to the center of collision -->
+          <geom type="mesh" mesh="Shank" material="metal" class="visual"/>
+          <geom size="0.012 0.0925" pos="0 0 0.1" quat="1 0 0 0" type="cylinder" class="collision" />
           <inertial 
-            pos="0.00629595 -0.000622121 -0.141417"
-            quat="0.710672 0.00154099 -0.00450087 0.703508"
-            mass="0.241352" 
-            diaginertia="0.0014901 0.00146356 5.31397e-05" />
-          
-          <geom mesh="Shank" material="metal" class="visual" />
-          <geom size="0.012 0.0925" pos="0.008 0 -0.06" quat="0.994493 0 -0.104807 0"
-            type="cylinder" class="collision" />
+            pos="0 0 0.1"
+            quat="1 0 0 0"
+            mass="0.11665" 
+            diaginertia="0.00030474 0.000294 1.2837e-05" />
           
           <!-- <geom pos="0 0 -0.213" mesh="Foot" class="visual" material="black" />
           <body name="Foot" pos="0 0 -0.213">
