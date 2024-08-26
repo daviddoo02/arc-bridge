@@ -42,9 +42,9 @@
       <geom size="0.046 0.02" pos="0 0 0" quat="1 0 0 0" type="cylinder" class="collision" />
       <inertial 
         pos="0 0 0" 
-        quat="1 0 0 0"
         mass="0.3612"
-        diaginertia="0.00017045 0.00078888 0.00092343" />
+        fullinertia="0.00017045 0.00078888 0.00092343 6.4163E-07 -1.2401E-08 1.0301E-06"
+        />
       
       <site name="imu" pos="0 0 0" />
       
@@ -56,9 +56,9 @@
         <geom size="0.1065 0.01225 0.017" pos="0.1 0 0" quat="1 0 0 0" type="box" class="collision" />
         <inertial 
           pos="0.1 0 0" 
-          quat="1 0 0 0"
           mass="0.43122"
-          diaginertia="0.00023052 0.0010696 0.0012471" />
+          fullinertia="0.00023052 0.0010696 0.0012471 -5.8304E-06 -4.9731E-06 1.4434E-06"
+          />
 
         
         <body name="Shank" pos="0.22 0 0" quat="0.503387 0.496588 0.503388 -0.49659">
@@ -69,9 +69,9 @@
           <geom size="0.012 0.0925" pos="0 0 0.1" quat="1 0 0 0" type="cylinder" class="collision" />
           <inertial 
             pos="0 0 0.1"
-            quat="1 0 0 0"
             mass="0.11665" 
-            diaginertia="0.00030474 0.000294 1.2837e-05" />
+            fullinertia="0.00030474 0.000294 1.2837E-05 -2.0633E-08 -1.2207E-07 -4.6853E-05"
+            />
           
           <!-- <geom pos="0 0 -0.213" mesh="Foot" class="visual" material="black" />
           <body name="Foot" pos="0 0 -0.213">
