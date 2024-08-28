@@ -9,75 +9,73 @@
       <joint axis="0 1 0" damping="0.1" armature="0.01" frictionloss="0.2"/>
       <motor ctrlrange="-30 30"/>
       <default class="hip">
-        <joint range="1.57 3.14"/>
+        <!-- <joint range="0 1.5708"/> -->
       </default>
       <default class="knee">
-        <joint range="-1.57 1.57"/>
+        <!-- <joint range="-3.1415 0"/> -->
       </default>
       <default class="visual">
         <geom type="mesh" contype="0" conaffinity="0" group="2"/>
       </default>
       <default class="collision">
         <geom group="3"/>
-        <!-- <default class="foot">
-          <geom size="0.022" pos="-0.002 0 -0.213" priority="1" condim="6"
-            friction="0.4 0.02 0.01"/>
-        </default> -->
       </default>
     </default>
   </default>
 
   <keyframe>
-    <key name="0" qpos="0 2.35 0" />
+    <key name="0" qpos="0 0 0" />
   </keyframe>
 
   <worldbody>
     <light pos="0 0 1.5" dir="0 0 -1" directional="true"/>
     <geom name="floor" size="0 0 0.05" type="plane" material="groundplane"/>
 
-    <body name="Base" pos="0 0 0.5">
+    <body name="Base" pos="0 0 0.5" quat="0.7071055 0.7071081 0  0">
       <joint name="base_joint" type="slide" axis="0 0 1" range="-0.2 1.5" />
       <geom type="mesh" mesh="Torso" material="metal" class="visual" />
-      <!-- ! Match initial frame to the center of collision -->
-      <geom size="0.046 0.02" pos="0 0 0" quat="1 0 0 0" type="cylinder" class="collision" />
+      <geom size="0.015 0.0115 0.25" pos="0 0 0.08" quat="1 0 0 0" type="box" class="collision" />
       <inertial 
-        pos="0 0 0" 
-        mass="0.3612"
-        fullinertia="0.00017045 0.00078888 0.00092343 6.4163E-07 -1.2401E-08 1.0301E-06"
+        pos="-0.00215681888141942 0.0397429066536333 -0.000126187460030895" 
+        mass="0.689645411604363"
+        fullinertia="0.00453975972477446 0.00442547230193359 0.000206819832083377 -1.08295272329626E-06 -1.8942645342971E-07 -1.05241169305115E-06"
         />
       
       <site name="imu" pos="0 0 0" />
       
-      <body name="Thigh" pos="0 0.026 0" quat="0.0250846 0.0250897 -0.706663 0.70666">
-        <!-- ! The joint axis is somehow misplaced -->
-        <joint name="thigh_joint" class="hip" axis="0 0 1"/>
-        <!-- ! Match initial frame to the center of collision -->
+      <body name="Thigh" pos="0.0259999999999998 0 0" quat="0.843428 0.5372422 0 0">
+        <joint name="thigh_joint" class="hip" axis="1 0 0"/>
         <geom type="mesh" mesh="Thigh" material="metal" class="visual"/>
-        <geom size="0.1065 0.01225 0.017" pos="0.1 0 0" quat="1 0 0 0" type="box" class="collision" />
+        <geom size="0.015 0.03 0.09" pos="-0.015 0.015 0.07" quat="1 0 0 0" type="box" class="collision" />
         <inertial 
-          pos="0.1 0 0" 
-          mass="0.43122"
-          fullinertia="0.00023052 0.0010696 0.0012471 -5.8304E-06 -4.9731E-06 1.4434E-06"
+          pos="0.00835563608947907 -0.00103729697527374 0.029921264047457" 
+          mass="0.416020319290412"
+          fullinertia="0.00119601641886755 0.00104126974193947 0.000211469873009476 -1.15671615936136E-06 5.01448729707544E-06 -2.62707122969903E-05"
           />
 
         
-        <body name="Shank" pos="0.22 0 0" quat="0.503387 0.496588 0.503388 -0.49659">
-          <!-- ! The joint axis is somehow misplaced -->
+        <body name="Shank" pos="-0.013 0 0.22" quat="0.6409418 0.7675895 0 0 ">
           <joint name="calf_joint" class="knee" axis="1 0 0"/>
-          <!-- ! Match initial frame to the center of collision -->
           <geom type="mesh" mesh="Shank" material="metal" class="visual"/>
-          <geom size="0.012 0.0925" pos="0 0 0.1" quat="1 0 0 0" type="cylinder" class="collision" />
+          <geom size="0.01 0.015 0.1" pos="0 0 0.08" quat="1 0 0 0" type="box" class="collision" />
           <inertial 
-            pos="0 0 0.1"
-            mass="0.11665" 
-            fullinertia="0.00030474 0.000294 1.2837E-05 -2.0633E-08 -1.2207E-07 -4.6853E-05"
+            pos="-0.000268628963877273 0.00027501601447566 0.055954473013002"
+            mass="0.101382968159968" 
+            fullinertia="0.000302797965120231 0.000299639626955308 3.97228866409251E-06 -2.08917944365273E-10 1.23800536384893E-07 2.45330278574424E-06"
             />
           
-          <!-- <geom pos="0 0 -0.213" mesh="Foot" class="visual" material="black" />
-          <body name="Foot" pos="0 0 -0.213">
-            <geom name="FL" class="foot" pos="-0.002 0 0"/>
-            <site name="foot_site" pos="-0.002 0 0" size="0.025"/>
-          </body> -->
+          <body name="Foot" pos="0 0 0.20193">
+            <geom type="mesh" mesh="Foot" material="metal" class="visual"/>
+            <geom size="0.015" pos="0 0 0" priority="1" condim="6"
+            friction="0.4 0.02 0.01" class="collision"/>
+            <inertial 
+              pos="3.46944695195361E-18 0 -0.00184900391626697"
+              mass="0.015262786450462" 
+              fullinertia="1.94488229426856E-06 1.93969409486384E-06 1.28287085932283E-06 5.22104008579044E-24 1.12149331296726E-21 -5.29395592033938E-23"
+              />
+
+            <site name="foot_site" pos="-0.002 0 0" size="0.015"/>
+          </body>
         </body>
       </body>
     </body>
@@ -105,7 +103,7 @@
     <framepos name="frame_pos" objtype="site" objname="imu" />
     <framelinvel name="frame_vel" objtype="site" objname="imu" />
 
-    <!-- <touch name="foot_force" site="foot_site" noise="0.01" /> -->
+    <touch name="foot_force" site="foot_site" noise="0.01" />
   </sensor>
 
   <visual>
@@ -125,10 +123,10 @@
     <material name="white" rgba="1 1 1 1" />
     <material name="gray" rgba="0.671705 0.692426 0.774270 1" />
 
-    <mesh file="Torso.obj" />
-    <mesh file="Thigh.obj" />
-    <mesh file="Shank.obj" />
-    <!-- <mesh file="Foot.obj" /> -->
+    <mesh file="Torso.STL" />
+    <mesh file="Thigh.STL" />
+    <mesh file="Shank.STL" />
+    <mesh file="Foot.STL" />
   </asset>
 
 </mujoco>
