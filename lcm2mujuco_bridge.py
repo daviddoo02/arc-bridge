@@ -100,7 +100,7 @@ class Lcm2MujocoBridge:
                 self.low_state.velocity[1] = self.mj_data.sensordata[self.dim_motor_sensor + 14]
                 self.low_state.velocity[2] = self.mj_data.sensordata[self.dim_motor_sensor + 15]
 
-                # self.low_state.foot_force = self.mj_data.sensordata[-1]*100
+                self.low_state.foot_force = self.mj_data.sensordata[-1]
 
                 self.lc.publish(self.topic_state, self.low_state.encode())
 
