@@ -1,5 +1,6 @@
 import lcm
 import mujoco
+import numpy as np
 
 from threading import Thread
 
@@ -59,9 +60,11 @@ class Lcm2MujocoBridge:
         if self.mj_data != None:
             msg = eval(self.topic_cmd+"_t").decode(data)
             for i in range(self.num_motor):
-                self.mj_data.ctrl[i] = msg.qj_tau[i] +\
-                                       msg.kp[i] * (msg.qj_pos[i] - self.mj_data.sensordata[i]) +\
-                                       msg.kd[i] * (msg.qj_vel[i] - self.mj_data.sensordata[i + self.num_motor])
+                ctrlrange = self.mj_model.actuator_ctrlrange[i]
+                motor_tau = msg.qj_tau[i] +\
+                            msg.kp[i] * (msg.qj_pos[i] - self.mj_data.sensordata[i]) +\
+                            msg.kd[i] * (msg.qj_vel[i] - self.mj_data.sensordata[i + self.num_motor])
+                self.mj_data.ctrl[i] = np.clip(motor_tau, ctrlrange[0], ctrlrange[1])
 
     def publishLowState(self):
         if self.mj_data != None:
