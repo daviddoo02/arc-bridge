@@ -9,10 +9,10 @@
       <joint axis="0 1 0" damping="0.1" armature="0.01" frictionloss="0.2"/>
       <motor ctrlrange="-30 30"/>
       <default class="hip">
-        <!-- <joint range="0 1.5708"/> -->
+        <joint range="0 1.5708"/>
       </default>
       <default class="knee">
-        <!-- <joint range="-3.1415 0"/> -->
+        <joint range="-3.1415 -0.85"/>
       </default>
       <default class="visual">
         <geom type="mesh" contype="0" conaffinity="0" group="2"/>
@@ -35,6 +35,8 @@
       <joint name="x_joint" type="slide" axis="1 0 0" range="-10 10" />
       <joint name="z_joint" type="slide" axis="0 0 1" range="-0.5 5" />
       <joint name="pitch_joint" type="hinge" axis="0 1 0"/>
+
+      <body name="Torso" childclass="hopper"/>
       <geom type="mesh" mesh="Torso" material="metal" class="visual" />
       <geom size="0.25 0.0115 0.0115" pos="0 -0.012 0.06" quat="1 0 0 0" type="box" class="collision" />
       <inertial 
