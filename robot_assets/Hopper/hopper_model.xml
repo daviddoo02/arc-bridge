@@ -24,7 +24,7 @@
   </default>
 
   <keyframe>
-    <key name="0" qpos="0 0.9 -1.8" />
+    <key name="0" qpos="0 0 0.9 -1.8" />
   </keyframe>
 
   <worldbody>
@@ -32,13 +32,15 @@
     <geom name="floor" size="0 0 0.05" type="plane" material="groundplane"/>
 
     <body name="Base" pos="0 0 0.5" quat="1 0 0 0">
-      <joint name="base_joint" type="slide" axis="0 0 1" range="-0.3 1.5" />
+      <joint name="x_joint" type="slide" axis="1 0 0" range="-10 10" />
+      <joint name="z_joint" type="slide" axis="0 0 1" range="-0.5 5" />
+      <!-- <joint name="pitch_joint" type="hinge" axis="0 1 0"/> -->
       <geom type="mesh" mesh="Torso" material="metal" class="visual" />
       <geom size="0.25 0.0115 0.0115" pos="0 -0.012 0.06" quat="1 0 0 0" type="box" class="collision" />
       <inertial 
         pos="0.00012619 0.0021568 0.039743" 
         mass="1.5"
-        fullinertia="0.00020682 0.0045398 0.0044255 -1.8943E-07 1.0524E-06 1.083E-06"
+        diaginertia="0.1 0.1 0.1"
         />
       
       <site name="imu" pos="0 0 0" />
