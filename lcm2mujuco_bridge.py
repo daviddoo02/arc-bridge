@@ -7,11 +7,11 @@ from threading import Thread
 from lcm_types.robot_lcm import *
 from utils import *
 
-MOTOR_SENSOR_NUM = 3
+MOTOR_SENSOR_NUM = 3 # pos, vel, torque
 
 class Lcm2MujocoBridge:
 
-    def __init__(self, mj_model, mj_data, topic_state, topic_cmd):
+    def __init__(self, mj_model, mj_data, topic_state, topic_cmd, replay):
         self.mj_model = mj_model
         self.mj_data = mj_data
         
@@ -19,6 +19,8 @@ class Lcm2MujocoBridge:
         self.topic_cmd = topic_cmd
 
         self.num_motor = self.mj_model.nu
+        self.num_body_state = self.mj_model.nq - self.num_motor
+        self.num_joint_state = self.num_motor
         self.dim_motor_sensor = MOTOR_SENSOR_NUM * self.num_motor
         self.have_imu = False
         self.have_frame_sensor = False
@@ -39,8 +41,12 @@ class Lcm2MujocoBridge:
         self.lc = lcm.LCM()
         self.low_state = eval(self.topic_state+"_t")()
         
-        self.low_cmd_suber = self.lc.subscribe(self.topic_cmd, self.lowCmdHandler)
-        self.low_cmd_suber.set_queue_capacity(1) # TODO verify this
+        if replay:
+            self.low_state_suber = self.lc.subscribe(self.topic_state, self.lowStateHandler)
+            self.low_state_suber.set_queue_capacity(0)
+        else:
+            self.low_cmd_suber = self.lc.subscribe(self.topic_cmd, self.lowCmdHandler)
+            self.low_cmd_suber.set_queue_capacity(1)
         
         lcm_handle_thread = Thread(target=self.lcmHandleThread)
         lcm_handle_thread.start()
@@ -65,6 +71,20 @@ class Lcm2MujocoBridge:
                             msg.kp[i] * (msg.qj_pos[i] - self.mj_data.sensordata[i]) +\
                             msg.kd[i] * (msg.qj_vel[i] - self.mj_data.sensordata[i + self.num_motor])
                 self.mj_data.ctrl[i] = np.clip(motor_tau, ctrlrange[0], ctrlrange[1])
+
+    def lowStateHandler(self, channel, data):
+        if self.mj_data == None:
+            return
+        msg = eval(self.topic_state+"_t").decode(data)
+        #! The following is used for hopper only
+        self.mj_data.qpos[0] = msg.position[0]
+        self.mj_data.qpos[1] = msg.position[2]-0.5 # offsetted z joint height in xml
+        self.mj_data.qpos[2] = msg.rpy[1]
+        self.mj_data.qpos[-2:] = msg.qj_pos
+        self.mj_data.qvel[:] = 0
+        # self.mj_data.act[:] = False
+        # self.mj_data.qacc_warmstart[:] = 0
+        # self.mj_data.ctrl[:] = 0
 
     def publishLowState(self):
         if self.mj_data != None:
