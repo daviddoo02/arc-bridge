@@ -51,6 +51,8 @@ class Lcm2MujocoBridge:
         lcm_handle_thread = Thread(target=self.lcmHandleThread)
         lcm_handle_thread.start()
 
+        self.low_cmd = eval(self.topic_cmd+"_t")()
+
     def lcmHandleThread(self):
         """
         Function to read the lcm data (and to stop the LCM instance on Cntl + C)
@@ -64,13 +66,15 @@ class Lcm2MujocoBridge:
 
     def lowCmdHandler(self, channel, data):
         if self.mj_data != None:
-            msg = eval(self.topic_cmd+"_t").decode(data)
-            for i in range(self.num_motor):
-                ctrlrange = self.mj_model.actuator_ctrlrange[i]
-                motor_tau = msg.qj_tau[i] +\
-                            msg.kp[i] * (msg.qj_pos[i] - self.mj_data.sensordata[i]) +\
-                            msg.kd[i] * (msg.qj_vel[i] - self.mj_data.sensordata[i + self.num_motor])
-                self.mj_data.ctrl[i] = np.clip(motor_tau, ctrlrange[0], ctrlrange[1])
+            self.low_cmd = eval(self.topic_cmd+"_t").decode(data)
+    
+    def update_motor_cmd(self):
+        for i in range(self.num_motor):
+            ctrlrange = self.mj_model.actuator_ctrlrange[i]
+            motor_tau = self.low_cmd.qj_tau[i] +\
+                        self.low_cmd.kp[i] * (self.low_cmd.qj_pos[i] - self.mj_data.sensordata[i]) +\
+                        self.low_cmd.kd[i] * (self.low_cmd.qj_vel[i] - self.mj_data.sensordata[i + self.num_motor])
+            self.mj_data.ctrl[i] = np.clip(motor_tau, ctrlrange[0], ctrlrange[1])
 
     def lowStateHandler(self, channel, data):
         if self.mj_data == None:
