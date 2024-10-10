@@ -22,8 +22,8 @@ mj_model.opt.timestep = config.dt_sim
 if args.replay:
     # Disable gravity and contact
     mj_model.opt.disableflags = mujoco.mjtDisableBit.mjDSBL_CONTACT | mujoco.mjtDisableBit.mjDSBL_GRAVITY
-
-mj_model.opt.disableflags = mujoco.mjtDisableBit.mjDSBL_GRAVITY
+# else:
+#     mj_model.opt.disableflags = mujoco.mjtDisableBit.mjDSBL_GRAVITY
 
 viewer = mujoco.viewer.launch_passive(mj_model, mj_data)
 bridge = Lcm2MujocoBridge(mj_model, mj_data, 

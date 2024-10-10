@@ -83,23 +83,23 @@
   </actuator>
 
   <sensor>
-    <jointpos name="thigh_pos" joint="thigh_joint" />
-    <jointpos name="calf_pos" joint="calf_joint" />
+    <jointpos name="thigh_pos" joint="thigh_joint" noise="0.01"/>
+    <jointpos name="calf_pos" joint="calf_joint" noise="0.01"/>
 
-    <jointvel name="thigh_vel" joint="thigh_joint" />
-    <jointvel name="calf_vel" joint="calf_joint" />
+    <jointvel name="thigh_vel" joint="thigh_joint" noise="0.01"/>
+    <jointvel name="calf_vel" joint="calf_joint" noise="0.01"/>
 
-    <jointactuatorfrc name="thigh_torque" joint="thigh_joint"/>
-    <jointactuatorfrc name="calf_torque" joint="calf_joint"/>
+    <jointactuatorfrc name="thigh_torque" joint="thigh_joint" noise="0.01"/>
+    <jointactuatorfrc name="calf_torque" joint="calf_joint" noise="0.01"/>
 
-    <framequat name="imu_quat" objtype="site" objname="imu" />
-    <gyro name="imu_gyro" site="imu" />
-    <accelerometer name="imu_acc" site="imu" />
+    <framequat name="imu_quat" objtype="site" objname="imu" noise="0.01"/>
+    <gyro name="imu_gyro" site="imu" noise="0.01"/>
+    <accelerometer name="imu_acc" site="imu" noise="0.01"/>
     
-    <framepos name="frame_pos" objtype="site" objname="imu" />
-    <framelinvel name="frame_vel" objtype="site" objname="imu" />
+    <framepos name="frame_pos" objtype="site" objname="imu" noise="0.01"/>
+    <framelinvel name="frame_vel" objtype="site" objname="imu" noise="0.01"/>
 
-    <touch name="foot_force" site="foot_site"/>
+    <touch name="foot_force" site="foot_site" noise="0.01"/>
   </sensor>
 
   <visual>
