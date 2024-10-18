@@ -10,7 +10,8 @@ from lcm2mujuco_bridge import Lcm2MujocoBridge
 import config
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--replay", action="store_true", help="replay state trajectory in Mujoco")
+parser.add_argument("--replay", action="store_true", help="replay state trajectory from LCM")
+parser.add_argument("--track", action="store_true", help="make camera track the robot's motion")
 args = parser.parse_args()
 
 # Initialize Mujoco
@@ -26,9 +27,11 @@ if args.replay:
 #     mj_model.opt.disableflags = mujoco.mjtDisableBit.mjDSBL_GRAVITY
 
 viewer = mujoco.viewer.launch_passive(mj_model, mj_data)
-bridge = Lcm2MujocoBridge(mj_model, mj_data, 
-                          config.robot_state_topic, config.robot_cmd_topic,
-                          args.replay)
+if args.track:
+    viewer.cam.type = mujoco.mjtCamera.mjCAMERA_TRACKING
+    viewer.cam.trackbodyid = 0
+
+bridge = Lcm2MujocoBridge(mj_model, mj_data, args.replay)
 
 # Separate simulation and visualization threads
 locker = threading.Lock()
