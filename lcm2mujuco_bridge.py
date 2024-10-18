@@ -1,9 +1,13 @@
+import time
 import lcm
 import mujoco
 import numpy as np
 
 from threading import Thread
 
+import config
+from state_estimator import HopperStateEstimator
+from moving_window_filter import MovingWindowFilter
 from lcm_types.robot_lcm import *
 from utils import *
 
@@ -11,12 +15,12 @@ MOTOR_SENSOR_NUM = 3 # pos, vel, torque
 
 class Lcm2MujocoBridge:
 
-    def __init__(self, mj_model, mj_data, topic_state, topic_cmd, replay):
+    def __init__(self, mj_model, mj_data, replay):
         self.mj_model = mj_model
         self.mj_data = mj_data
         
-        self.topic_state = topic_state
-        self.topic_cmd = topic_cmd
+        self.topic_state = config.robot_state_topic
+        self.topic_cmd = config.robot_cmd_topic
 
         self.num_motor = self.mj_model.nu
         self.num_body_state = self.mj_model.nq - self.num_motor
@@ -25,6 +29,7 @@ class Lcm2MujocoBridge:
         self.have_imu = False
         self.have_frame_sensor = False
         self.dt = self.mj_model.opt.timestep
+        self.start_time = time.time_ns()
 
         # Check sensors
         for i in range(self.dim_motor_sensor, self.mj_model.nsensor):
@@ -43,7 +48,8 @@ class Lcm2MujocoBridge:
         
         if replay:
             self.low_state_suber = self.lc.subscribe(self.topic_state, self.lowStateHandler)
-            self.low_state_suber.set_queue_capacity(0)
+            # self.low_state_suber = self.lc.subscribe("HOPPER_STATE", self.lowStateHandler)
+            self.low_state_suber.set_queue_capacity(1)
         else:
             self.low_cmd_suber = self.lc.subscribe(self.topic_cmd, self.lowCmdHandler)
             self.low_cmd_suber.set_queue_capacity(1)
@@ -52,6 +58,14 @@ class Lcm2MujocoBridge:
         lcm_handle_thread.start()
 
         self.low_cmd = eval(self.topic_cmd+"_t")()
+
+        # State estimation
+        x_init = np.array([0.3, 0, 0, 0]) # initial height and vel in 3D
+        P_init = np.eye(4) * 1e-5               # initial state covariance
+        self.state_estimator = HopperStateEstimator(config.dt_sim, x_init, P_init)
+        # For state estimation visualization only
+        self.pos_est = np.array([0, 0, 0.3])
+        self.R_body = np.eye(3)
 
     def lcmHandleThread(self):
         """
@@ -82,7 +96,7 @@ class Lcm2MujocoBridge:
         msg = eval(self.topic_state+"_t").decode(data)
         #! The following is used for hopper only
         self.mj_data.qpos[0] = msg.position[0]
-        self.mj_data.qpos[1] = msg.position[2]-0.5 # offsetted z joint height in xml
+        self.mj_data.qpos[1] = msg.position[2]-0.4 # offsetted z joint height in xml
         self.mj_data.qpos[2] = msg.rpy[1]
         self.mj_data.qpos[-2:] = msg.qj_pos
         self.mj_data.qvel[:] = 0
@@ -103,22 +117,23 @@ class Lcm2MujocoBridge:
                 self.low_state.quaternion[2] = self.mj_data.sensordata[self.dim_motor_sensor + 2]
                 self.low_state.quaternion[3] = self.mj_data.sensordata[self.dim_motor_sensor + 3]
                 
-                rpy = quat_to_rpy(Quaternion(*self.low_state.quaternion))
+                quat_world = Quaternion(*self.low_state.quaternion)
+                rpy = quat_to_rpy(quat_world)
                 self.low_state.rpy[0] = rpy[0]
                 self.low_state.rpy[1] = rpy[1]
-                self.low_state.rpy[2] = rpy[2]                
+                self.low_state.rpy[2] = rpy[2]
 
-                self.low_state.omega[0] = self.mj_data.sensordata[self.dim_motor_sensor + 4]
-                self.low_state.omega[1] = self.mj_data.sensordata[self.dim_motor_sensor + 5]
-                self.low_state.omega[2] = self.mj_data.sensordata[self.dim_motor_sensor + 6]
+                R_body = quat_to_rot(quat_world)
 
-                # self.low_state.imu_state.accelerometer[
-                #     0] = self.mj_data.sensordata[self.dim_motor_sensor + 7]
-                # self.low_state.imu_state.accelerometer[
-                #     1] = self.mj_data.sensordata[self.dim_motor_sensor + 8]
-                # self.low_state.imu_state.accelerometer[
-                #     2] = self.mj_data.sensordata[self.dim_motor_sensor + 9]
+                omega_body = self.mj_data.sensordata[self.dim_motor_sensor + 4:self.dim_motor_sensor + 7]
+                omega_world = R_body @ omega_body
+                self.low_state.omega[:] = omega_world.tolist()
 
+                accel_body = self.mj_data.sensordata[self.dim_motor_sensor + 7:self.dim_motor_sensor + 10]
+                accel_world = R_body @ accel_body
+                self.low_state.acceleration[:] = accel_world.tolist()
+
+                # Ground truth position and velocity readings in the world frame
                 self.low_state.position[0] = self.mj_data.sensordata[self.dim_motor_sensor + 10]
                 self.low_state.position[1] = self.mj_data.sensordata[self.dim_motor_sensor + 11]
                 self.low_state.position[2] = self.mj_data.sensordata[self.dim_motor_sensor + 12]
@@ -126,9 +141,29 @@ class Lcm2MujocoBridge:
                 self.low_state.velocity[0] = self.mj_data.sensordata[self.dim_motor_sensor + 13]
                 self.low_state.velocity[1] = self.mj_data.sensordata[self.dim_motor_sensor + 14]
                 self.low_state.velocity[2] = self.mj_data.sensordata[self.dim_motor_sensor + 15]
+                
+                # Ground truth contact sensing
+                self.low_state.foot_force = self.mj_data.sensordata[self.dim_motor_sensor + 16]
 
-                self.low_state.foot_force = self.mj_data.sensordata[-1]
+                # Estimated position and velocity based on IMU and encoder readings
+                se_state = self.state_estimator.predict(accel_world + np.array([0, 0, -9.8]))
+                if self.low_state.foot_force > 0.:
+                    foot_pos_body_frame = self.state_estimator.foot_pos_body_frame(self.low_state.qj_pos)
+                    foot_vel_body_frame = self.state_estimator.foot_vel_body_frame(self.low_state.qj_pos, self.low_state.qj_vel)
+                    vel_measured = -R_body @ (np.cross(omega_body, foot_pos_body_frame) + foot_vel_body_frame)
+                    height_measured = -(R_body @ foot_pos_body_frame)[-1]
+                    se_state = self.state_estimator.correct(np.append(height_measured, vel_measured))
 
+                height_est = se_state[0]
+                vel_est = se_state[1:]
+                self.low_state.velocity[:] = vel_est.tolist()
+                # TODO add IMU offset to pos_est
+                self.pos_est = self.low_state.position.copy()
+                self.pos_est[-1] = height_est
+                self.R_body = R_body
+
+                # Encode and publish robot states
+                self.low_state.timestamp = int(time.time_ns() - self.start_time)
                 self.lc.publish(self.topic_state, self.low_state.encode())
 
     def printSceneInformation(self):

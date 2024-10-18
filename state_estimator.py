@@ -36,7 +36,7 @@ class KalmanFilter:
         # Update prediction error covariance
         self.P = self.A @ self.P @ self.A.T + self.Q
 
-        return (self.C @ self.x).copy()
+        return self.x.copy()
 
     def correct(self, y):
         # Compute the Kalman gain
@@ -46,27 +46,25 @@ class KalmanFilter:
         # Update measurement error covariance
         self.P = (self.I - K @ self.C) @ self.P
         
-        return (self.C @ self.x).copy()
+        return self.x.copy()
 
 class HopperStateEstimator(KalmanFilter):
 
     def __init__(self, dt, x_init, P_init):
         dt = dt
-        dim_state = 6
+        dim_state = 4
         dim_control = 3
         dim_obs = 4
         Ac = np.zeros((dim_state, dim_state))
-        Ac[:3, 3:] = np.eye(3)
+        Ac[:3, -1] = 1
         Bc = np.zeros((dim_state, dim_control))
-        Bc[:3] = np.zeros((3, 3))
-        Bc[3:] = np.eye(3)
+        Bc[1:] = np.eye(3)
         # print(f"Ac: {Ac}")
         # print(f"Bc: {Bc}")
 
         A = np.eye(dim_state) + dt * Ac
         B = dt * Bc
-        C = np.zeros((dim_obs, dim_state))
-        C[:, 2:] = np.eye(4)
+        C = np.eye(4)
         # print(f"C: {C}")
 
         Q = np.eye(dim_state) * 1e-3
