@@ -46,3 +46,21 @@ def quat_to_rpy(q:Quaternion) -> np.ndarray:
     # yaw
     rpy[2] = np.arctan2(2.*(q.x*q.y+q.w*q.z), q.w*q.w + q.x*q.x - q.y*q.y - q.z*q.z)
     return rpy
+
+def quat_to_rot(q:Quaternion) -> np.ndarray:
+    """
+    Convert a quaternion to a rotation matrix. This matrix represents a
+    coordinate transformation into the frame which has the orientation specified
+    by the quaternion
+    """
+    e0 = q.w
+    e1 = q.x
+    e2 = q.y
+    e3 = q.z
+    R = np.array([1 - 2 * (e2 * e2 + e3 * e3), 2 * (e1 * e2 - e0 * e3),
+                  2 * (e1 * e3 + e0 * e2), 2 * (e1 * e2 + e0 * e3),
+                  1 - 2 * (e1 * e1 + e3 * e3), 2 * (e2 * e3 - e0 * e1),
+                  2 * (e1 * e3 - e0 * e2), 2 * (e2 * e3 + e0 * e1),
+                  1 - 2 * (e1 * e1 + e2 * e2)], 
+                  dtype=DTYPE).reshape((3,3))
+    return R
