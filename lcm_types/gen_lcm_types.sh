@@ -20,6 +20,8 @@ mkdir -p $LCM_GEN
 lcm-gen -p ./*.lcm
 # Generate java types
 lcm-gen -j ./*.lcm
+# Generate C++ types
+lcm-gen -x ./*.lcm
 # Compile java types
 # java release 8 is used for compatability of MATLAB >= 2023b
 javac -cp $LCM_JAR $LCM_GEN/*.java --release 8 

@@ -8,6 +8,8 @@ struct hopper_state_t
     double   quaternion[4];
     double   rpy[3];
 
+    double   acceleration[3];
+
     double   velocity[3];
     double   omega[3];
 
