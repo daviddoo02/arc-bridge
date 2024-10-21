@@ -60,9 +60,9 @@ class Lcm2MujocoBridge:
         self.low_cmd = eval(self.topic_cmd+"_t")()
 
         # State estimation
-        x_init = np.array([0.3, 0, 0, 0]) # initial height and vel in 3D
-        P_init = np.eye(4) * 1e-5               # initial state covariance
-        self.state_estimator = HopperStateEstimator(config.dt_sim, x_init, P_init)
+        self.x_init = np.array([0.3, 0, 0, 0]) # initial height and vel in 3D
+        self.P_init = np.eye(4) * 1e-5         # initial state covariance
+        self.state_estimator = HopperStateEstimator(config.dt_sim, self.x_init, self.P_init)
         # For state estimation visualization only
         self.pos_est = np.array([0, 0, 0.3])
         self.R_body = np.eye(3)
@@ -81,7 +81,9 @@ class Lcm2MujocoBridge:
     def lowCmdHandler(self, channel, data):
         if self.mj_data != None:
             self.low_cmd = eval(self.topic_cmd+"_t").decode(data)
-    
+            if self.low_cmd.reset_se:
+                self.state_estimator.reset(self.x_init, self.P_init)
+
     def update_motor_cmd(self):
         for i in range(self.num_motor):
             ctrlrange = self.mj_model.actuator_ctrlrange[i]
