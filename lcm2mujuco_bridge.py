@@ -159,7 +159,6 @@ class Lcm2MujocoBridge:
                 height_est = se_state[0]
                 vel_est = se_state[1:]
                 self.low_state.velocity[:] = vel_est.tolist()
-                # TODO add IMU offset to pos_est
                 self.pos_est = self.low_state.position.copy()
                 self.pos_est[-1] = height_est
                 self.R_body = R_body

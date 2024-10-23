@@ -52,9 +52,9 @@ class HopperStateEstimator(KalmanFilter):
 
     def __init__(self, dt, x_init, P_init):
         dt = dt
-        dim_state = 4
-        dim_control = 3
-        dim_obs = 4
+        dim_state = 4   # (pz, vx, vy, vz)
+        dim_control = 3 # (ax, ay, az)
+        dim_obs = 4     # (pz, vx, vy, vz)
         Ac = np.zeros((dim_state, dim_state))
         Ac[:3, -1] = 1
         Bc = np.zeros((dim_state, dim_control))
@@ -64,16 +64,20 @@ class HopperStateEstimator(KalmanFilter):
 
         A = np.eye(dim_state) + dt * Ac
         B = dt * Bc
-        C = np.eye(4)
+        C = np.eye(dim_obs)
         # print(f"C: {C}")
 
-        Q = np.eye(dim_state) * 1e-3
-        R = np.eye(dim_obs) * 1e-6
+        # Process noise (pz, vx, vy, vz)
+        Q = np.diag([0.002, 0.02, 0.02, 0.02])
+        # Measurement noise (pz, vx, vy, vz)
+        R = np.diag([0.001, 0.1, 0.1, 0.1])
+        # TODO scale up any covariance related foot during swing, assume alway in contact
 
         super(HopperStateEstimator, self).__init__(A, B, C, Q, R, x_init, P_init)
 
         self.l1 = 0.22
         self.l2 = 0.22
+        self.p_hip = np.array([0, 0, -0.07])
 
     def foot_pos_body_frame(self, qj_pos):
         l1 = self.l1
@@ -85,7 +89,7 @@ class HopperStateEstimator(KalmanFilter):
                            0,
                            - l1 * np.cos(th1) - l2 * np.cos(th1 + th2)])
         
-        return p_foot
+        return self.p_hip + p_foot
 
     def foot_vel_body_frame(self, qj_pos, qj_vel):
         l1 = self.l1
