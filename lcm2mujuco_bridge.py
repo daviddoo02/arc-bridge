@@ -59,10 +59,9 @@ class Lcm2MujocoBridge:
 
         self.low_cmd = eval(self.topic_cmd+"_t")()
 
-        # State estimation
-        self.x_init = np.array([0.3, 0, 0, 0]) # initial height and vel in 3D
-        self.P_init = np.eye(4) * 1e-5         # initial state covariance
-        self.state_estimator = HopperStateEstimator(config.dt_sim, self.x_init, self.P_init)
+        # State estimator
+        self.state_estimator = HopperStateEstimator(config.dt_sim)
+        
         # For state estimation visualization only
         self.pos_est = np.array([0, 0, 0.3])
         self.R_body = np.eye(3)
@@ -82,7 +81,7 @@ class Lcm2MujocoBridge:
         if self.mj_data != None:
             self.low_cmd = eval(self.topic_cmd+"_t").decode(data)
             if self.low_cmd.reset_se:
-                self.state_estimator.reset(self.x_init, self.P_init)
+                self.state_estimator.reset()
 
     def update_motor_cmd(self):
         for i in range(self.num_motor):
@@ -156,11 +155,11 @@ class Lcm2MujocoBridge:
                     height_measured = -(R_body @ foot_pos_body_frame)[-1]
                     se_state = self.state_estimator.correct(np.append(height_measured, vel_measured))
 
-                height_est = se_state[0]
-                vel_est = se_state[1:]
+                pos_est = se_state[:3]
+                vel_est = se_state[3:]
+                self.low_state.position[:] = pos_est.tolist()
                 self.low_state.velocity[:] = vel_est.tolist()
                 self.pos_est = self.low_state.position.copy()
-                self.pos_est[-1] = height_est
                 self.R_body = R_body
 
                 # Encode and publish robot states
