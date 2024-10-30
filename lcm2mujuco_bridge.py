@@ -99,7 +99,7 @@ class Lcm2MujocoBridge:
         self.mj_data.qpos[0] = msg.position[0]
         self.mj_data.qpos[1] = msg.position[2]-0.4 # offsetted z joint height in xml
         self.mj_data.qpos[2] = msg.rpy[1]
-        self.mj_data.qpos[-2:] = msg.qj_pos
+        self.mj_data.qpos[3:5] = msg.qj_pos
         self.mj_data.qvel[:] = 0
         # self.mj_data.act[:] = False
         # self.mj_data.qacc_warmstart[:] = 0

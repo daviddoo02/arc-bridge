@@ -55,16 +55,18 @@ def SimulationThread():
 def PhysicsViewerThread():
     while viewer.is_running():
         locker.acquire()
-        viewer.user_scn.ngeom = 0
-        mujoco.mjv_initGeom(
-            viewer.user_scn.geoms[0],
-            type=mujoco.mjtGeom.mjGEOM_BOX,
-            size=[0.2, 0.02, 0.02],
-            pos=bridge.pos_est,
-            mat=bridge.R_body.flatten(),
-            rgba=[1, 0, 0, 0.3]
-        )
-        viewer.user_scn.ngeom = 1
+        if not args.replay:
+            # Add geom of estimated position and orientation
+            viewer.user_scn.ngeom = 0
+            mujoco.mjv_initGeom(
+                viewer.user_scn.geoms[0],
+                type=mujoco.mjtGeom.mjGEOM_BOX,
+                size=[0.2, 0.02, 0.02],
+                pos=bridge.pos_est,
+                mat=bridge.R_body.flatten(),
+                rgba=[1, 0, 0, 0.3]
+            )
+            viewer.user_scn.ngeom = 1
         viewer.sync()
         locker.release()
         time.sleep(config.dt_viewer)
