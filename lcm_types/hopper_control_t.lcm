@@ -12,5 +12,7 @@ struct hopper_control_t
     double   kp[2];
     double   kd[2];
 
+    boolean  contact; // scheduled contact
+
     boolean  reset_se;
 }
