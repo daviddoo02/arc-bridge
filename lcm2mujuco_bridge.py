@@ -36,9 +36,9 @@ class Lcm2MujocoBridge:
             name = mujoco.mj_id2name(self.mj_model,
                                      mujoco._enums.mjtObj.mjOBJ_SENSOR, i)
             if name == "imu_quat":
-                self.have_imu_ = True
+                self.have_imu = True
             if name == "frame_pos":
-                self.have_frame_sensor_ = True
+                self.have_frame_sensor = True
 
         self.printSceneInformation()
 
@@ -106,65 +106,72 @@ class Lcm2MujocoBridge:
         # self.mj_data.ctrl[:] = 0
 
     def publishLowState(self):
-        if self.mj_data != None:
-            for i in range(self.num_motor):
-                self.low_state.qj_pos[i] = self.mj_data.sensordata[i]
-                self.low_state.qj_vel[i] = self.mj_data.sensordata[i + self.num_motor]
-                self.low_state.qj_tau[i] = self.mj_data.sensordata[i + 2 * self.num_motor]
+        if self.mj_data == None:
+            return
+        
+        for i in range(self.num_motor):
+            self.low_state.qj_pos[i] = self.mj_data.sensordata[i]
+            self.low_state.qj_vel[i] = self.mj_data.sensordata[i + self.num_motor]
+            self.low_state.qj_tau[i] = self.mj_data.sensordata[i + 2 * self.num_motor]
 
-            if self.have_frame_sensor_:
-                self.low_state.quaternion[0] = self.mj_data.sensordata[self.dim_motor_sensor + 0]
-                self.low_state.quaternion[1] = self.mj_data.sensordata[self.dim_motor_sensor + 1]
-                self.low_state.quaternion[2] = self.mj_data.sensordata[self.dim_motor_sensor + 2]
-                self.low_state.quaternion[3] = self.mj_data.sensordata[self.dim_motor_sensor + 3]
-                
-                quat_world = Quaternion(*self.low_state.quaternion)
-                rpy = quat_to_rpy(quat_world)
-                self.low_state.rpy[0] = rpy[0]
-                self.low_state.rpy[1] = rpy[1]
-                self.low_state.rpy[2] = rpy[2]
+        if self.have_frame_sensor:
+            # Ground truth position and velocity readings in the world frame
+            self.low_state.position[0] = self.mj_data.sensordata[self.dim_motor_sensor + 10]
+            self.low_state.position[1] = self.mj_data.sensordata[self.dim_motor_sensor + 11]
+            self.low_state.position[2] = self.mj_data.sensordata[self.dim_motor_sensor + 12]
 
-                R_body = quat_to_rot(quat_world)
+            self.low_state.velocity[0] = self.mj_data.sensordata[self.dim_motor_sensor + 13]
+            self.low_state.velocity[1] = self.mj_data.sensordata[self.dim_motor_sensor + 14]
+            self.low_state.velocity[2] = self.mj_data.sensordata[self.dim_motor_sensor + 15]
 
-                omega_body = self.mj_data.sensordata[self.dim_motor_sensor + 4:self.dim_motor_sensor + 7]
-                omega_world = R_body @ omega_body
-                self.low_state.omega[:] = omega_world.tolist()
+        if self.have_imu:
+            self.low_state.quaternion[0] = self.mj_data.sensordata[self.dim_motor_sensor + 0]
+            self.low_state.quaternion[1] = self.mj_data.sensordata[self.dim_motor_sensor + 1]
+            self.low_state.quaternion[2] = self.mj_data.sensordata[self.dim_motor_sensor + 2]
+            self.low_state.quaternion[3] = self.mj_data.sensordata[self.dim_motor_sensor + 3]
+            
+            quat_world = Quaternion(*self.low_state.quaternion)
+            rpy = quat_to_rpy(quat_world)
+            self.low_state.rpy[0] = rpy[0]
+            self.low_state.rpy[1] = rpy[1]
+            self.low_state.rpy[2] = rpy[2]
 
-                accel_body = self.mj_data.sensordata[self.dim_motor_sensor + 7:self.dim_motor_sensor + 10]
-                accel_world = R_body @ accel_body
-                self.low_state.acceleration[:] = accel_world.tolist()
+            R_body = quat_to_rot(quat_world)
 
-                # Ground truth position and velocity readings in the world frame
-                self.low_state.position[0] = self.mj_data.sensordata[self.dim_motor_sensor + 10]
-                self.low_state.position[1] = self.mj_data.sensordata[self.dim_motor_sensor + 11]
-                self.low_state.position[2] = self.mj_data.sensordata[self.dim_motor_sensor + 12]
+            omega_body = self.mj_data.sensordata[self.dim_motor_sensor + 4:self.dim_motor_sensor + 7]
+            omega_world = R_body @ omega_body
+            self.low_state.omega[:] = omega_world.tolist()
 
-                self.low_state.velocity[0] = self.mj_data.sensordata[self.dim_motor_sensor + 13]
-                self.low_state.velocity[1] = self.mj_data.sensordata[self.dim_motor_sensor + 14]
-                self.low_state.velocity[2] = self.mj_data.sensordata[self.dim_motor_sensor + 15]
-                
-                # Ground truth contact sensing
-                self.low_state.foot_force = self.mj_data.sensordata[self.dim_motor_sensor + 16]
+            accel_body = self.mj_data.sensordata[self.dim_motor_sensor + 7:self.dim_motor_sensor + 10]
+            accel_world = R_body @ accel_body + np.array([0, 0, -9.8])
+            self.low_state.acceleration[:] = accel_world.tolist()
 
-                # Estimated position and velocity based on IMU and encoder readings
-                se_state = self.state_estimator.predict(accel_world + np.array([0, 0, -9.8]))
-                if self.low_state.foot_force > 0.:
-                    foot_pos_body_frame = self.state_estimator.foot_pos_body_frame(self.low_state.qj_pos)
-                    foot_vel_body_frame = self.state_estimator.foot_vel_body_frame(self.low_state.qj_pos, self.low_state.qj_vel)
-                    vel_measured = -R_body @ (np.cross(omega_body, foot_pos_body_frame) + foot_vel_body_frame)
-                    height_measured = -(R_body @ foot_pos_body_frame)[-1]
-                    se_state = self.state_estimator.correct(np.append(height_measured, vel_measured))
+            # Ground truth contact sensing
+            self.low_state.foot_force = self.mj_data.sensordata[self.dim_motor_sensor + 16]
 
-                pos_est = se_state[:3]
-                vel_est = se_state[3:]
-                self.low_state.position[:] = pos_est.tolist()
-                self.low_state.velocity[:] = vel_est.tolist()
-                self.pos_est = self.low_state.position.copy()
-                self.R_body = R_body
+            # Estimated position and velocity based on IMU and encoder readings
+            se_state = self.state_estimator.predict(accel_world)
+            foot_pos_body_frame = self.state_estimator.foot_pos_body_frame(self.low_state.qj_pos)
+            foot_vel_body_frame = self.state_estimator.foot_vel_body_frame(self.low_state.qj_pos, self.low_state.qj_vel)
+            vel_measured = -R_body @ (np.cross(omega_body, foot_pos_body_frame) + foot_vel_body_frame)
+            height_measured = -(R_body @ foot_pos_body_frame)[-1]
+            if self.low_state.foot_force > 0.:
+                se_state = self.state_estimator.correct(np.append(height_measured, vel_measured))
 
-                # Encode and publish robot states
-                self.low_state.timestamp = int(time.time_ns() - self.start_time)
-                self.lc.publish(self.topic_state, self.low_state.encode())
+            pos_est = se_state[:3]
+            vel_est = se_state[3:]
+            self.low_state.position[:] = pos_est.tolist()
+            self.low_state.velocity[:] = vel_est.tolist()
+            self.pos_est = self.low_state.position.copy()
+            self.R_body = R_body
+
+            # Encode and publish robot states
+            self.low_state.timestamp = int(time.time_ns() - self.start_time)
+            self.lc.publish(self.topic_state, self.low_state.encode())
+
+            # Handle reset request
+            if self.low_cmd.reset_se:
+                self.state_estimator.reset(np.array([0, 0, height_measured, *vel_measured]))
 
     def printSceneInformation(self):
         print(" ")

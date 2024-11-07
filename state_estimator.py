@@ -28,8 +28,11 @@ class KalmanFilter:
         self.P_init = P_init
         self.reset()
 
-    def reset(self):
-        self.x = self.x_init.copy()
+    def reset(self, x_init=None):
+        if x_init is None:
+            self.x = self.x_init.copy()
+        else:
+            self.x = x_init.copy()
         self.P = self.P_init.copy()
 
     def predict(self, u):
