@@ -74,7 +74,7 @@ class HopperStateEstimator(KalmanFilter):
         # print(f"C:\n{C}")
 
         # Process noise (px, py, pz, vx, vy, vz)
-        Q = np.diag([0.002, 0.002, 0.002, 0.02, 0.02, 0.02])
+        Q = np.diag([0.002, 0.002, 0.002, 0.02, 0.02, 0.02]) * 1e-3
         # Measurement noise (pz, vx, vy, vz)
         R = np.diag([0.001, 0.1, 0.1, 0.1])
         # TODO scale up any covariance related foot during swing, assume alway in contact
