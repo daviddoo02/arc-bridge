@@ -21,8 +21,8 @@ mj_data = mujoco.MjData(mj_model)
 mj_model.opt.timestep = config.dt_sim
 
 if args.replay:
-    # Disable gravity and contact
-    mj_model.opt.disableflags = mujoco.mjtDisableBit.mjDSBL_CONTACT | mujoco.mjtDisableBit.mjDSBL_GRAVITY
+    # Disable gravity and all constraints (e.g. contact, friction ...)
+    mj_model.opt.disableflags = mujoco.mjtDisableBit.mjDSBL_CONSTRAINT | mujoco.mjtDisableBit.mjDSBL_GRAVITY
 # else:
 #     mj_model.opt.disableflags = mujoco.mjtDisableBit.mjDSBL_GRAVITY
 
