@@ -1,0 +1,16 @@
+package robot_lcm;
+
+struct biped_control_t
+{
+    int64_t  timestamp;
+
+    double   qj_tau[10];
+
+    double   qj_pos[10];
+    double   qj_vel[10];
+
+    double   kp[10];
+    double   kd[10];
+
+    boolean  reset_se;
+}
