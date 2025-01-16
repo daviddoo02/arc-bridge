@@ -11,20 +11,23 @@ import config
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--replay", action="store_true", help="replay state trajectory from LCM")
+parser.add_argument("--debug", action="store_true", help="debug mode")
 parser.add_argument("--track", action="store_true", help="make camera track the robot's motion")
+parser.add_argument("--blocking", action="store_true", help="block the main thread")
 args = parser.parse_args()
 
 # Initialize Mujoco
 mj_model = mujoco.MjModel.from_xml_path(config.robot_xml_path)
 mj_data = mujoco.MjData(mj_model)
+
 # Modify MjOption
 mj_model.opt.timestep = config.dt_sim
 
 if args.replay:
     # Disable gravity and all constraints (e.g. contact, friction ...)
     mj_model.opt.disableflags = mujoco.mjtDisableBit.mjDSBL_CONSTRAINT | mujoco.mjtDisableBit.mjDSBL_GRAVITY
-# else:
-#     mj_model.opt.disableflags = mujoco.mjtDisableBit.mjDSBL_GRAVITY
+elif args.debug:
+    mj_model.opt.disableflags = mujoco.mjtDisableBit.mjDSBL_GRAVITY
 
 viewer = mujoco.viewer.launch_passive(mj_model, mj_data)
 if args.track:
@@ -36,6 +39,7 @@ bridge = Lcm2MujocoBridge(mj_model, mj_data, args.replay)
 # Separate simulation and visualization threads
 locker = threading.Lock()
 
+# Reset data keyframe
 mujoco.mj_resetDataKeyframe(mj_model, mj_data, 0)
 
 def SimulationThread():
@@ -48,14 +52,19 @@ def SimulationThread():
         if not args.replay:
             bridge.publishLowState()
             bridge.update_motor_cmd()
+
         time_until_next_step = mj_model.opt.timestep - (time.perf_counter() - step_start)
         if time_until_next_step > 0:
             time.sleep(time_until_next_step)
 
+        if args.blocking:
+            # TODO: add a way to stop the simulation
+            pass
+
 def PhysicsViewerThread():
     while viewer.is_running():
         locker.acquire()
-        if not args.replay:
+        if not args.replay and config.robot_type == "hopper":
             # Add geom of estimated position and orientation
             viewer.user_scn.ngeom = 0
             mujoco.mjv_initGeom(

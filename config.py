@@ -1,6 +1,10 @@
 # Configs
 dt_sim = 0.001 # 1000 Hz
 dt_viewer = 0.02
-robot_xml_path = "./robot_assets/Hopper/hopper_model.xml"
-robot_state_topic = "hopper_state"
-robot_cmd_topic = "hopper_control"
+robot_type = "biped" # "hopper" or "biped"
+robot_state_topic = robot_type + "_state"
+robot_cmd_topic = robot_type + "_control"
+if robot_type == "hopper":
+    robot_xml_path = "./robot_assets/Hopper/hopper_scene.xml"
+elif robot_type == "biped":
+    robot_xml_path = "./robot_assets/BipedLinefoot/biped_linefoot_scene.xml"
