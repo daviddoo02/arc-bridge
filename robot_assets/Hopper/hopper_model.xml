@@ -1,7 +1,6 @@
 <mujoco model="hopper_model">
   <compiler angle="radian" meshdir="meshes" autolimits="true" />
   <option cone="elliptic" impratio="100" />
-  <statistic center="0 0 0.1" extent="0.8"/>
   
   <default>
     <default class="hopper">
@@ -25,12 +24,10 @@
 
   <keyframe>
     <key name="0" qpos="0 0 0 0.9 -1.8" />
+    <!-- <key name="0" qpos="0 0 0 0.9 -1.8 0 0 0 0 0 0 0 0 0 0 0 0 0 0" /> -->
   </keyframe>
 
   <worldbody>
-    <light pos="0 0 1.5" dir="0 0 -1" directional="true"/>
-    <geom name="floor" size="0 0 0.05" type="plane" material="groundplane"/>
-
     <body name="Base" pos="0 0 0.4" quat="1 0 0 0">
       <joint name="x_joint" type="slide" axis="1 0 0" range="-10 10" />
       <joint name="z_joint" type="slide" axis="0 0 1" range="-0.4 5" />
@@ -53,6 +50,10 @@
         <geom size="0.025 0.015 0.09" pos="-0.01 0.015 -0.07" quat="1 0 0 0" type="box" class="collision" />
         <inertial pos="0.0010373 -0.0083556 -0.029921" quat="0.704019 0.0129996 0.00933427 0.710001" mass="0.41602" diaginertia="0.00119604 0.00104212 0.000210614"/>
 
+        <!-- <body name="Coupler" pos="0 0 0" quat="1 0 0 0">
+          <joint name="coupler_joint" axis="0 1 0" type="hinge"/>
+          <geom type="mesh" mesh="Coupler" material="metal" class="visual"/>
+        </body> -->
         
         <body name="Shank" pos="0 0.013 -0.22">
           <joint name="calf_joint" class="knee" axis="0 1 0"/>
@@ -76,6 +77,10 @@
       </body>
     </body>
   </worldbody>
+<!-- 
+  <equality>
+    <joint joint1="coupler_joint" joint2="calf_joint"/>
+  </equality> -->
 
   <actuator>
     <motor class="hip" name="thigh" joint="thigh_joint" />
@@ -102,18 +107,7 @@
     <touch name="foot_force" site="foot_site" noise="0.01"/>
   </sensor>
 
-  <visual>
-    <headlight diffuse="0.6 0.6 0.6" ambient="0.3 0.3 0.3" specular="0 0 0"/>
-    <rgba haze="0.15 0.25 0.35 1"/>
-    <global azimuth="-130" elevation="-20"/>
-  </visual>
-
   <asset>
-    <texture type="skybox" builtin="gradient" rgb1="0.3 0.5 0.7" rgb2="0 0 0" width="512" height="3072"/>
-    <texture type="2d" name="groundplane" builtin="checker" mark="edge" rgb1="0.2 0.3 0.4" rgb2="0.1 0.2 0.3"
-      markrgb="0.8 0.8 0.8" width="300" height="300"/>
-    <material name="groundplane" texture="groundplane" texuniform="true" texrepeat="5 5" reflectance="0.2"/>
-
     <material name="metal" rgba=".9 .95 .95 1" />
     <material name="black" rgba="0 0 0 1" />
     <material name="white" rgba="1 1 1 1" />
@@ -123,6 +117,7 @@
     <mesh file="Thigh.STL" />
     <mesh file="Shank.STL" />
     <mesh file="Foot.STL" />
+    <mesh file="Coupler.STL" />
   </asset>
 
 </mujoco>
