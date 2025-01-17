@@ -30,7 +30,7 @@
 
   <!-- Keyframes -->
   <keyframe>
-    <key name="0" qpos="0 0 0.8 0 0 0 1 0 0 0.9 -1.8 0.9 0 0 0.9 -1.8 0.9" />
+    <key name="0" qpos="0 0 0.48 1 0 0 0 0 0 0.9 -1.8 0.9 0 0 0.9 -1.8 0.9" />
   </keyframe>
 
   <!-- World body -->
@@ -42,7 +42,7 @@
       <site name="imu" pos="0 0 0" />
 
       <body name="torso" pos="0 0 0" childclass="biped">
-        <geom name="torso_geom" type="box" size="0.05 0.1 0.125" rgba="1 1 0 1" class="visual" />
+        <geom name="torso_geom" type="box" size="0.05 0.1 0.125" rgba="1 1 0 1" class="collision" />
         <inertial pos="0 0 0" mass="10" diaginertia="0.1 0.08 0.05" />
 
       <!-- Right Leg -->

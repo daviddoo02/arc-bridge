@@ -7,7 +7,6 @@ from threading import Thread
 
 import config
 from state_estimator import HopperStateEstimator
-from moving_window_filter import MovingWindowFilter
 from lcm_types.robot_lcm import *
 from utils import *
 
@@ -15,10 +14,10 @@ MOTOR_SENSOR_NUM = 3 # pos, vel, torque
 
 class Lcm2MujocoBridge:
 
-    def __init__(self, mj_model, mj_data, replay):
+    def __init__(self, mj_model, mj_data):
         self.mj_model = mj_model
         self.mj_data = mj_data
-        
+
         self.topic_state = config.robot_state_topic
         self.topic_cmd = config.robot_cmd_topic
 
@@ -48,19 +47,9 @@ class Lcm2MujocoBridge:
         # LCM messages
         self.lc = lcm.LCM()
         self.low_state = eval(self.topic_state+"_t")()
-        
-        if replay:
-            self.low_state_suber = self.lc.subscribe(self.topic_state, self.lowStateHandler)
-            # self.low_state_suber = self.lc.subscribe("HOPPER_STATE", self.lowStateHandler)
-            self.low_state_suber.set_queue_capacity(1)
-        else:
-            self.low_cmd_suber = self.lc.subscribe(self.topic_cmd, self.lowCmdHandler)
-            self.low_cmd_suber.set_queue_capacity(1)
-        
-        lcm_handle_thread = Thread(target=self.lcmHandleThread)
-        lcm_handle_thread.start()
-
         self.low_cmd = eval(self.topic_cmd+"_t")()
+
+        self.low_cmd_received = False
 
         # State estimator
         self.state_estimator = HopperStateEstimator(config.dt_sim)
@@ -69,6 +58,22 @@ class Lcm2MujocoBridge:
         # For state estimation visualization only
         self.pos_est = np.array([0, 0, 0.3])
         self.R_body = np.eye(3)
+
+    def start_lcm(self):
+        lcm_handle_thread = Thread(target=self.lcmHandleThread)
+        lcm_handle_thread.start()
+
+    def register_low_state_subscriber(self, topic=None):
+        if topic:
+            assert(topic == "HOPPER_STATE")
+            self.low_state_suber = self.lc.subscribe("HOPPER_STATE", self.lowStateHandler)
+        else:
+            self.low_state_suber = self.lc.subscribe(self.topic_state, self.lowStateHandler)
+        self.low_state_suber.set_queue_capacity(1)
+
+    def register_low_cmd_subscriber(self):
+        self.low_cmd_suber = self.lc.subscribe(self.topic_cmd, self.lowCmdHandler)
+        self.low_cmd_suber.set_queue_capacity(1)
 
     def lcmHandleThread(self):
         """
@@ -84,6 +89,7 @@ class Lcm2MujocoBridge:
     def lowCmdHandler(self, channel, data):
         if self.mj_data != None:
             self.low_cmd = eval(self.topic_cmd+"_t").decode(data)
+            self.low_cmd_received = True
 
     def update_motor_cmd(self):
         for i in range(self.num_motor):
@@ -99,7 +105,7 @@ class Lcm2MujocoBridge:
         msg = eval(self.topic_state+"_t").decode(data)
         #! The following is used for hopper only
         self.mj_data.qpos[0] = msg.position[0]
-        self.mj_data.qpos[1] = msg.position[2]-0.4 # offsetted z joint height in xml
+        self.mj_data.qpos[1] = msg.position[2]-0.47 # offsetted z joint height in xml
         self.mj_data.qpos[2] = msg.rpy[1]
         self.mj_data.qpos[3:5] = msg.qj_pos
         self.mj_data.qvel[:] = 0
@@ -152,50 +158,49 @@ class Lcm2MujocoBridge:
             accel_world = R_body @ accel_body + np.array([0, 0, -9.8])
             self.low_state.acceleration[:] = accel_world.tolist()
 
-            is_cmd_contact = self.low_cmd.contact
-            # Estimated foot contact based on knee joint pos and vel tracking error
-            curr_qj_knee_err = self.low_cmd.qj_pos[1] - self.mj_data.sensordata[1]
-            curr_dq_knee_err = self.low_cmd.qj_vel[1] - self.mj_data.sensordata[1 + self.num_motor]
+            # # Estimated foot contact based on knee joint pos and vel tracking error
+            # curr_qj_knee_err = self.low_cmd.qj_pos[1] - self.mj_data.sensordata[1]
+            # curr_dq_knee_err = self.low_cmd.qj_vel[1] - self.mj_data.sensordata[1 + self.num_motor]
             
-            # Use a window to filter outliers
-            is_estimated_contact = False
-            if curr_qj_knee_err > 0.1 or curr_dq_knee_err > 5:
-                self.thr_counter += 1
-                if self.thr_counter > 4.5:
-                    is_estimated_contact = True
-            else:
-                self.thr_counter = 0
+            # # Use a window to filter outliers
+            # is_estimated_contact = False
+            # if curr_qj_knee_err > 0.1 or curr_dq_knee_err > 5:
+            #     self.thr_counter += 1
+            #     if self.thr_counter > 4.5:
+            #         is_estimated_contact = True
+            # else:
+            #     self.thr_counter = 0
 
-            # print(f"GT: {self.low_state.foot_force:.5f}\t EST {curr_q_knee_pose_err:.5f}")
+            # # print(f"GT: {self.low_state.foot_force:.5f}\t EST {curr_q_knee_pose_err:.5f}")
 
-            if is_estimated_contact:
-                self.low_state.foot_force = 1
-            else:
-                self.low_state.foot_force = 0
+            # if is_estimated_contact:
+            #     self.low_state.foot_force = 1
+            # else:
+            #     self.low_state.foot_force = 0
 
-            # Estimated position and velocity based on IMU and encoder readings
-            se_state = self.state_estimator.predict(accel_world)
-            foot_pos_body_frame = self.state_estimator.foot_pos_body_frame(self.low_state.qj_pos)
-            foot_vel_body_frame = self.state_estimator.foot_vel_body_frame(self.low_state.qj_pos, self.low_state.qj_vel)
-            vel_measured = -R_body @ (np.cross(omega_body, foot_pos_body_frame) + foot_vel_body_frame)
-            height_measured = -(R_body @ foot_pos_body_frame)[-1]
-            if is_cmd_contact:
-                se_state = self.state_estimator.correct(np.append(height_measured, vel_measured))
+            # # Estimated position and velocity based on IMU and encoder readings
+            # se_state = self.state_estimator.predict(accel_world)
+            # foot_pos_body_frame = self.state_estimator.foot_pos_body_frame(self.low_state.qj_pos)
+            # foot_vel_body_frame = self.state_estimator.foot_vel_body_frame(self.low_state.qj_pos, self.low_state.qj_vel)
+            # vel_measured = -R_body @ (np.cross(omega_body, foot_pos_body_frame) + foot_vel_body_frame)
+            # height_measured = -(R_body @ foot_pos_body_frame)[-1]
+            # if self.low_cmd.contact:
+            #     se_state = self.state_estimator.correct(np.append(height_measured, vel_measured))
 
-            pos_est = se_state[:3]
-            vel_est = se_state[3:]
-            self.low_state.position[:] = pos_est.tolist()
-            self.low_state.velocity[:] = vel_est.tolist()
-            self.pos_est = self.low_state.position.copy()
-            self.R_body = R_body
+            # pos_est = se_state[:3]
+            # vel_est = se_state[3:]
+            # self.low_state.position[:] = pos_est.tolist()
+            # self.low_state.velocity[:] = vel_est.tolist()
+            # self.pos_est = self.low_state.position.copy()
+            # self.R_body = R_body
+
+            # # Handle reset request
+            # if self.low_cmd.reset_se:
+            #     self.state_estimator.reset(np.array([0, 0, height_measured, *vel_measured]))
 
             # Encode and publish robot states
             self.low_state.timestamp = time.time_ns()
             self.lc.publish(self.topic_state, self.low_state.encode())
-
-            # Handle reset request
-            if self.low_cmd.reset_se:
-                self.state_estimator.reset(np.array([0, 0, height_measured, *vel_measured]))
 
     def printSceneInformation(self):
         print(" ")

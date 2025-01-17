@@ -34,7 +34,13 @@ if args.track:
     viewer.cam.type = mujoco.mjtCamera.mjCAMERA_TRACKING
     viewer.cam.trackbodyid = 0
 
-bridge = Lcm2MujocoBridge(mj_model, mj_data, args.replay)
+bridge = Lcm2MujocoBridge(mj_model, mj_data)
+if args.replay:
+    bridge.register_low_state_subscriber()
+else:
+    bridge.register_low_cmd_subscriber()
+
+bridge.start_lcm()
 
 # Separate simulation and visualization threads
 locker = threading.Lock()
@@ -52,14 +58,16 @@ def SimulationThread():
         if not args.replay:
             bridge.publishLowState()
             bridge.update_motor_cmd()
-
-        time_until_next_step = mj_model.opt.timestep - (time.perf_counter() - step_start)
-        if time_until_next_step > 0:
-            time.sleep(time_until_next_step)
+            bridge.low_cmd_received = False
 
         if args.blocking:
-            # TODO: add a way to stop the simulation
-            pass
+            while not bridge.low_cmd_received:
+                bridge.publishLowState()
+        else:
+            time_until_next_step = mj_model.opt.timestep - (time.perf_counter() - step_start)
+            if time_until_next_step > 0:
+                time.sleep(time_until_next_step)
+
 
 def PhysicsViewerThread():
     while viewer.is_running():
