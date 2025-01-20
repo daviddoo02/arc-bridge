@@ -1,27 +1,46 @@
 # Robot Mujoco LCM
-Software bridge of a nominal robot controller to Mujoco simulator via LCM communication
+Software bridge of a nominal robot controller to Mujoco simulator via LCM communication.
 
 ## Dependencies
 - [LCM](https://github.com/lcm-proj/lcm)
 - [Mujoco](https://github.com/google-deepmind/mujoco)
+- Java (for LCM visualization and type generation)
 
 ## Quick Start
-1. Install dependencies
+1. Make sure you have java installed. Type `javac` to verify.
+2. Initialize LCM as submodule
     ```sh
+    git submodule update --init
+    ```
+3. Build LCM from source to get [`lcm.jar`](https://lcm-proj.github.io/lcm/content/java-notes.html#finding-lcm-jar) for later use
+    ```sh
+    cd lcm
+    mkdir build
+    cd build
+    cmake ..
+    make
+    cp lcm-java/lcm.jar ../../lcm_types/lcm.jar
+    cd ../..
+    ```
+4. Install `mujoco` in your favorite python environment
+    ```sh
+    conda activate [name]
     pip install -r requirements.txt
     ```
-2. Specify your robot xml file path and LCM topic names in `config.py`
-3. Check if `<lcm_types>` folder contains the type templates you need
-4. Generate LCM types
+2. Select your robot type in `config.py`
+3. Generate LCM types
     ```sh
     cd lcm_types
     ./gen_lcm_types.sh
     ```
-5. Run the Mujoco Viewer to simulate your robot!
+4. Run the Mujoco Viewer to simulate your robot
     ```sh
+    cd ..
     python robot_mujoco.py
     ```
-6. Spy the communication rate and plot topics
+    > [!WARNING]
+    > Close the viewer to exit the program. Ctrl-C might not be captured properly due to multithreading.
+5. Spy the communication rate and plot data
     ```sh
     cd lcm_types
     ./run_lcm_spy.sh
@@ -29,4 +48,5 @@ Software bridge of a nominal robot controller to Mujoco simulator via LCM commun
 
 ## Supported Robot Models
 - [x] PEA Hopper
-- [ ] ??? Biped
+- [x] Linefoot Biped
+- [ ] Pointfoot Biped

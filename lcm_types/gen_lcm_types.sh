@@ -7,8 +7,8 @@ if [ $? != 0 ] ; then
     if [ -e /usr/local/share/java/lcm.jar ] ; then
         LCM_JAR=/usr/local/share/java/lcm.jar
     else
-        if [ -e ../../lcm-java/lcm.jar ] ; then
-            LCM_JAR=../../lcm-java/lcm.jar
+        if [ -e ../lcm/lcm-java/lcm.jar ] ; then
+            LCM_JAR=../lcm/lcm-java/lcm.jar
         else
             LCM_JAR=./lcm.jar
         fi
