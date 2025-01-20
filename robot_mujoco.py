@@ -13,7 +13,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument("--replay", action="store_true", help="replay state trajectory from LCM")
 parser.add_argument("--debug", action="store_true", help="debug mode")
 parser.add_argument("--track", action="store_true", help="make camera track the robot's motion")
-parser.add_argument("--blocking", action="store_true", help="block the main thread")
+parser.add_argument("--block", action="store_true", help="block the main thread")
 args = parser.parse_args()
 
 # Initialize Mujoco
@@ -34,42 +34,45 @@ if args.track:
     viewer.cam.type = mujoco.mjtCamera.mjCAMERA_TRACKING
     viewer.cam.trackbodyid = 0
 
+# Initialize bridge
 bridge = Lcm2MujocoBridge(mj_model, mj_data)
 if args.replay:
     bridge.register_low_state_subscriber()
 else:
     bridge.register_low_cmd_subscriber()
 
-bridge.start_lcm()
-
 # Separate simulation and visualization threads
 locker = threading.Lock()
 
 # Reset data keyframe
 mujoco.mj_resetDataKeyframe(mj_model, mj_data, 0)
+mujoco.mj_step(mj_model, mj_data)
 
 def SimulationThread():
     global mj_data, mj_model
     while viewer.is_running():
+        if args.block and not bridge.low_cmd_received:
+            bridge.publish_low_tate()
+            time.sleep(config.dt_sim)
+            continue
+
         step_start = time.perf_counter()
         locker.acquire()
         mujoco.mj_step(mj_model, mj_data)
         locker.release()
         if not args.replay:
-            bridge.publishLowState()
+            bridge.publish_low_tate()
             bridge.update_motor_cmd()
             bridge.low_cmd_received = False
 
-        if args.blocking:
-            while not bridge.low_cmd_received:
-                bridge.publishLowState()
-        else:
-            time_until_next_step = mj_model.opt.timestep - (time.perf_counter() - step_start)
-            if time_until_next_step > 0:
-                time.sleep(time_until_next_step)
+        time_until_next_step = mj_model.opt.timestep - (time.perf_counter() - step_start)
+        if time_until_next_step > 0:
+            time.sleep(time_until_next_step)
+
+    print("Simulation thread exited")
 
 
-def PhysicsViewerThread():
+def ViewerThread():
     while viewer.is_running():
         locker.acquire()
         if not args.replay and config.robot_type == "hopper":
@@ -88,10 +91,19 @@ def PhysicsViewerThread():
         locker.release()
         time.sleep(config.dt_viewer)
 
+    print("Viewer thread exited")
+
 
 if __name__ == "__main__":
-    viewer_thread = Thread(target=PhysicsViewerThread)
+    bridge.start_lcm_thread()
+
+    viewer_thread = Thread(target=ViewerThread)
     sim_thread = Thread(target=SimulationThread)
 
     viewer_thread.start()
     sim_thread.start()
+
+    # Wait for threads to exit after viewer is closed
+    viewer_thread.join()
+    sim_thread.join()
+    bridge.stop_lcm_thread()

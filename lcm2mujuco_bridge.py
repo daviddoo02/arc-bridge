@@ -42,14 +42,16 @@ class Lcm2MujocoBridge:
             if name == "foot_force":
                 self.have_foot_sensor = True
 
-        self.printSceneInformation()
+        self.print_scene_info()
 
         # LCM messages
         self.lc = lcm.LCM()
         self.low_state = eval(self.topic_state+"_t")()
         self.low_cmd = eval(self.topic_cmd+"_t")()
+        self.lcm_handle_thread = None
 
         self.low_cmd_received = False
+        self.is_running = None
 
         # State estimator
         self.state_estimator = HopperStateEstimator(config.dt_sim)
@@ -59,9 +61,15 @@ class Lcm2MujocoBridge:
         self.pos_est = np.array([0, 0, 0.3])
         self.R_body = np.eye(3)
 
-    def start_lcm(self):
-        lcm_handle_thread = Thread(target=self.lcmHandleThread)
-        lcm_handle_thread.start()
+    def start_lcm_thread(self):
+        self.is_running = True
+        self.lcm_handle_thread = Thread(target=self.lcmHandleThread)
+        self.lcm_handle_thread.start()
+
+    def stop_lcm_thread(self):
+        self.is_running = False
+        self.lcm_handle_thread.join()
+        print("LCM thread exited")
 
     def register_low_state_subscriber(self, topic=None):
         if topic:
@@ -76,28 +84,13 @@ class Lcm2MujocoBridge:
         self.low_cmd_suber.set_queue_capacity(1)
 
     def lcmHandleThread(self):
-        """
-        Function to read the lcm data (and to stop the LCM instance on Cntl + C)
-        """
-        try:
-            while True:
-                self.lc.handle()
-
-        except Exception:
-            self.lc.unsubscribe(self.low_cmd_suber)
+        while self.is_running:
+            self.lc.handle_timeout(0)
 
     def lowCmdHandler(self, channel, data):
         if self.mj_data != None:
             self.low_cmd = eval(self.topic_cmd+"_t").decode(data)
             self.low_cmd_received = True
-
-    def update_motor_cmd(self):
-        for i in range(self.num_motor):
-            ctrlrange = self.mj_model.actuator_ctrlrange[i]
-            motor_tau = self.low_cmd.qj_tau[i] +\
-                        self.low_cmd.kp[i] * (self.low_cmd.qj_pos[i] - self.mj_data.sensordata[i]) +\
-                        self.low_cmd.kd[i] * (self.low_cmd.qj_vel[i] - self.mj_data.sensordata[i + self.num_motor])
-            self.mj_data.ctrl[i] = np.clip(motor_tau, ctrlrange[0], ctrlrange[1])
 
     def lowStateHandler(self, channel, data):
         if self.mj_data == None:
@@ -113,7 +106,15 @@ class Lcm2MujocoBridge:
         # self.mj_data.qacc_warmstart[:] = 0
         # self.mj_data.ctrl[:] = 0
 
-    def publishLowState(self):
+    def update_motor_cmd(self):
+        for i in range(self.num_motor):
+            ctrlrange = self.mj_model.actuator_ctrlrange[i]
+            motor_tau = self.low_cmd.qj_tau[i] +\
+                        self.low_cmd.kp[i] * (self.low_cmd.qj_pos[i] - self.mj_data.sensordata[i]) +\
+                        self.low_cmd.kd[i] * (self.low_cmd.qj_vel[i] - self.mj_data.sensordata[i + self.num_motor])
+            self.mj_data.ctrl[i] = np.clip(motor_tau, ctrlrange[0], ctrlrange[1])
+
+    def publish_low_tate(self):
         if self.mj_data == None:
             return
         
@@ -202,7 +203,7 @@ class Lcm2MujocoBridge:
             self.low_state.timestamp = time.time_ns()
             self.lc.publish(self.topic_state, self.low_state.encode())
 
-    def printSceneInformation(self):
+    def print_scene_info(self):
         print(" ")
 
         print("<<------------- Link ------------->> ")
