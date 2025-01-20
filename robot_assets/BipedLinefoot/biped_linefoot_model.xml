@@ -2,7 +2,7 @@
 
   <!-- Options -->
   <compiler angle="radian" meshdir="meshes" autolimits="true" />
-  <option cone="elliptic" impratio="100" gravity="0 0 -9.8" />
+  <!-- <option cone="elliptic" impratio="100" gravity="0 0 -9.81" /> -->
 
   <!-- Default parameters -->
    <default>
@@ -66,8 +66,8 @@
                 <joint class="ankle" name="right_ankle_ry" type="hinge" axis="0 1 0" />
                 <geom name="right_foot_geom" type="cylinder" size="0.01 0.15" rgba="1 0 0 1" fromto="-0.075 0 0 0.075 0 0" class="collision" />
 
-                <site name="right_foot_toe" pos="0.075 0 0" size="0.015"/>
-                <site name="right_foot_heel" pos="-0.075 0 0" size="0.015"/>
+                <!-- <site name="right_foot_toe" pos="0.075 0 0" size="0.015"/>
+                <site name="right_foot_heel" pos="-0.075 0 0" size="0.015"/> -->
               </body>
             </body>
           </body>
@@ -95,8 +95,8 @@
                 <joint class="ankle" name="left_ankle_ry" type="hinge" axis="0 1 0" />
                 <geom name="left_foot_geom" type="cylinder" size="0.01 0.15" rgba="1 0 0 1" fromto="-0.075 0 0 0.075 0 0" class="collision" />
 
-                <site name="left_foot_toe" pos="0.075 0 0" size="0.015"/>
-                <site name="left_foot_heel" pos="-0.075 0 0" size="0.015"/>
+                <!-- <site name="left_foot_toe" pos="0.075 0 0" size="0.015"/>
+                <site name="left_foot_heel" pos="-0.075 0 0" size="0.015"/> -->
               </body>
             </body>
           </body>
