@@ -22,25 +22,25 @@ Software bridge of a nominal robot controller to Mujoco simulator via LCM commun
     cp lcm-java/lcm.jar ../../lcm_types/lcm.jar
     cd ../..
     ```
-4. Install `mujoco` in your favorite python environment
-    ```sh
-    conda activate [name]
-    pip install -r requirements.txt
-    ```
-2. Select your robot type in `config.py`
-3. Generate LCM types
+4. Generate LCM types
     ```sh
     cd lcm_types
     ./gen_lcm_types.sh
     ```
-4. Run the Mujoco Viewer to simulate your robot
+5. Install `mujoco` in your favorite python environment
+    ```sh
+    conda activate [name]
+    pip install -r requirements.txt
+    ```
+6. Select your robot type in `config.py`
+7. Run the Mujoco Viewer to simulate your robot
     ```sh
     cd ..
     python robot_mujoco.py
     ```
-    > [!WARNING]
-    > Close the viewer to exit the program. Ctrl-C might not be captured properly due to multithreading.
-5. Spy the communication rate and plot data
+> [!WARNING]
+> Close the viewer to exit the program. Ctrl-C might not be captured properly due to multithreading.
+8. Spy the communication rate and plot data
     ```sh
     cd lcm_types
     ./run_lcm_spy.sh
