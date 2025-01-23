@@ -159,6 +159,13 @@ class Lcm2MujocoBridge:
             accel_world = R_body @ accel_body + np.array([0, 0, -9.8])
             self.low_state.acceleration[:] = accel_world.tolist()
 
+            # Send inertia matrix and bias force
+            if config.robot_type == "biped":
+                temp_inertia_mat = np.zeros((self.mj_model.nv, self.mj_model.nv))
+                mujoco.mj_fullM(self.mj_model, temp_inertia_mat, self.mj_data.qM)
+                self.low_state.inertia_mat = temp_inertia_mat.tolist()
+                self.low_state.bias_force = self.mj_data.qfrc_bias
+
             # # Estimated foot contact based on knee joint pos and vel tracking error
             # curr_qj_knee_err = self.low_cmd.qj_pos[1] - self.mj_data.sensordata[1]
             # curr_dq_knee_err = self.low_cmd.qj_vel[1] - self.mj_data.sensordata[1 + self.num_motor]
