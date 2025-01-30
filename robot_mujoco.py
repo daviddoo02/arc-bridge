@@ -34,6 +34,10 @@ if args.track:
     viewer.cam.type = mujoco.mjtCamera.mjCAMERA_TRACKING
     viewer.cam.trackbodyid = 0
 
+# Enable visualization flags
+# viewer.opt.flags[mujoco.mjtVisFlag.mjVIS_INERTIA] = True
+viewer.opt.flags[mujoco.mjtVisFlag.mjVIS_CONTACTFORCE] = True
+
 # Initialize bridge
 bridge = Lcm2MujocoBridge(mj_model, mj_data)
 if args.replay:
