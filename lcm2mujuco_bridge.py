@@ -159,8 +159,8 @@ class Lcm2MujocoBridge:
             accel_world = R_body @ accel_body + np.array([0, 0, -9.8])
             self.low_state.acceleration[:] = accel_world.tolist()
 
-            # Send inertia matrix and bias force
             if config.robot_type == "biped":
+                # Send inertia matrix and bias force
                 temp_inertia_mat = np.zeros((self.mj_model.nv, self.mj_model.nv))
                 mujoco.mj_fullM(self.mj_model, temp_inertia_mat, self.mj_data.qM)
                 self.low_state.inertia_mat = temp_inertia_mat.tolist()
@@ -218,7 +218,7 @@ class Lcm2MujocoBridge:
             name = mujoco.mj_id2name(self.mj_model,
                                      mujoco._enums.mjtObj.mjOBJ_BODY, i)
             if name:
-                print("link_index:", i, ", name:", name)
+                print(f"link_index: {i}, name: {name}, mass: {self.mj_model.body_mass[i]:.4f}, inertia: {self.mj_model.body_inertia[i]}")
         print(" ")
 
         print("<<------------- Joint ------------->> ")
