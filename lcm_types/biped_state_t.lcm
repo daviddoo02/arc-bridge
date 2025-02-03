@@ -17,7 +17,7 @@ struct biped_state_t
     double   qj_vel[10];
     double   qj_tau[10];
 
-    double   foot_force[4];
+    double   foot_force[4]; // line foot
 
     double   inertia_mat[16][16]; // 6 + num_joint
     double   bias_force[16];

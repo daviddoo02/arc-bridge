@@ -10,7 +10,7 @@ class Quaternion:
         self.z = DTYPE(z)
         self._norm = np.sqrt(self.w*self.w+self.x*self.x+self.y*self.y+self.z*self.z, dtype=DTYPE)
 
-    def toNumpy(self):
+    def to_numpy(self):
         """convert to an (4,1) numpy array"""
         return np.array([self.w,self.x,self.y,self.z], dtype=DTYPE).reshape((4,1))
     
