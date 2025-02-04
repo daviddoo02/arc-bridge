@@ -6,8 +6,8 @@ from threading import Thread
 import threading
 import argparse
 
-from lcm2mujuco_bridge import Lcm2MujocoBridge
 import config
+from bridges import Lcm2MujocoBridge, HopperBridge, BipedLinefootBridge
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--replay", action="store_true", help="replay state trajectory from LCM")
@@ -39,7 +39,13 @@ if args.track:
 viewer.opt.flags[mujoco.mjtVisFlag.mjVIS_CONTACTFORCE] = True
 
 # Initialize bridge
-bridge = Lcm2MujocoBridge(mj_model, mj_data)
+if config.robot_type == "hopper":
+    bridge = HopperBridge(mj_model, mj_data)
+elif config.robot_type == "biped_linefoot":
+    bridge = BipedLinefootBridge(mj_model, mj_data)
+else:
+    bridge = Lcm2MujocoBridge(mj_model, mj_data)
+
 if args.replay:
     bridge.register_low_state_subscriber("HOPPER_STATE") # Capitalized for hardware topic name
 else:
