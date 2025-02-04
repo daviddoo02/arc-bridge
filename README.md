@@ -29,6 +29,8 @@ Software bridge of a nominal robot controller to Mujoco simulator via LCM commun
     cd lcm_types
     ./gen_lcm_types.sh
     ```
+    > [!WARNING]
+    > Redo this step every time if any LCM types are changed (may from new commits)
 5. Install `mujoco` in your favorite python environment
     ```sh
     conda activate [name]
@@ -40,8 +42,8 @@ Software bridge of a nominal robot controller to Mujoco simulator via LCM commun
     cd ..
     python robot_mujoco.py
     ```
-> [!WARNING]
-> Close the viewer to exit the program. Ctrl-C might not be captured properly due to multithreading.
+    > [!WARNING]
+    > Close the viewer to exit the program. Ctrl-C might not be captured properly due to multithreading.
 8. Spy the communication rate and plot data
     ```sh
     cd lcm_types
@@ -52,3 +54,4 @@ Software bridge of a nominal robot controller to Mujoco simulator via LCM commun
 - [x] PEA Hopper
 - [x] Linefoot Biped
 - [ ] Pointfoot Biped
+- [ ] LimX Tron 1
