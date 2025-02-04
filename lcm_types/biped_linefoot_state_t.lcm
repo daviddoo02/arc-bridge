@@ -1,6 +1,6 @@
 package robot_lcm;
 
-struct biped_state_t
+struct biped_linefoot_state_t
 {
     int64_t  timestamp;
 

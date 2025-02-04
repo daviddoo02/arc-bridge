@@ -5,6 +5,8 @@ Software bridge of a nominal robot controller to Mujoco simulator via LCM commun
 - [LCM](https://github.com/lcm-proj/lcm)
 - [Mujoco](https://github.com/google-deepmind/mujoco)
 - Java (for LCM visualization and type generation)
+> [!NOTE]
+> Tested on Ubuntu 22.04 with Python 3.10
 
 ## Quick Start
 1. Make sure you have java installed. Type `javac` to verify.

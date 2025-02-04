@@ -167,4 +167,4 @@ robot_lcm/
 lcmlog*
 *.ipynb
 *.mp4
-
+*.mat
