@@ -41,7 +41,7 @@ viewer.opt.flags[mujoco.mjtVisFlag.mjVIS_CONTACTFORCE] = True
 # Initialize bridge
 bridge = Lcm2MujocoBridge(mj_model, mj_data)
 if args.replay:
-    bridge.register_low_state_subscriber()
+    bridge.register_low_state_subscriber("HOPPER_STATE") # Capitalized for hardware topic name
 else:
     bridge.register_low_cmd_subscriber()
 
@@ -55,19 +55,17 @@ mujoco.mj_step(mj_model, mj_data)
 def SimulationThread():
     global mj_data, mj_model
     while viewer.is_running():
-        if args.block and not bridge.low_cmd_received:
-            bridge.publish_low_tate()
-            time.sleep(config.dt_sim)
-            continue
-
         step_start = time.perf_counter()
-        locker.acquire()
-        mujoco.mj_step(mj_model, mj_data)
-        locker.release()
-        if not args.replay:
-            bridge.publish_low_tate()
-            bridge.update_motor_cmd()
-            bridge.low_cmd_received = False
+        if args.block and not bridge.low_cmd_received:
+            bridge.publish_low_state()
+        else:
+            locker.acquire()
+            mujoco.mj_step(mj_model, mj_data)
+            locker.release()
+            if not args.replay:
+                bridge.publish_low_state()
+                bridge.update_motor_cmd()
+                bridge.low_cmd_received = False
 
         time_until_next_step = mj_model.opt.timestep - (time.perf_counter() - step_start)
         if time_until_next_step > 0:
