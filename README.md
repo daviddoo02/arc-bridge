@@ -21,12 +21,12 @@ Software bridge of a nominal robot controller to Mujoco simulator via LCM commun
     cd build
     cmake ..
     make
-    cp lcm-java/lcm.jar ../../lcm_types/lcm.jar
+    sudo make install
+    cp lcm-java/lcm.jar ../../lcm.jar
     cd ../..
     ```
 4. Generate LCM types
     ```sh
-    cd lcm_types
     ./gen_lcm_types.sh
     ```
 > [!WARNING]
@@ -34,7 +34,7 @@ Software bridge of a nominal robot controller to Mujoco simulator via LCM commun
 5. Install `mujoco` in your favorite python environment
     ```sh
     conda activate [name]
-    pip install -r requirements.txt
+    pip install mujoco lcm
     ```
 6. Select your robot type in `config.py`
 7. Run the Mujoco Viewer to simulate your robot
