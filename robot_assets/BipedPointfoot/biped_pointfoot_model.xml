@@ -1,0 +1,138 @@
+<mujoco model="biped">
+
+  <!-- Options -->
+  <compiler angle="radian" meshdir="meshes" autolimits="true" />
+  <!-- <option cone="elliptic" impratio="100" gravity="0 0 -9.81" /> -->
+
+  <!-- Default parameters -->
+   <default>
+    <default class="biped">
+      <geom friction="1.0" margin="0.001" condim="1" density="4000"/>
+      <joint axis="0 1 0" damping="0.1" armature="0.01" frictionloss="0.2"/>
+      <motor ctrlrange="-50 50"/>
+      <default class="hip">
+        <joint range="-1.5708 1.5708"/>
+      </default>
+      <default class="knee">
+        <joint range="-3.1415 0"/>
+      </default>
+      <default class="ankle">
+        <joint range="-1.5708 1.5708"/>
+      </default>
+      <default class="visual">
+        <geom contype="0" conaffinity="0" group="2"/>
+      </default>
+      <default class="collision">
+        <geom group="2"/>
+      </default>
+    </default>
+  </default>
+
+  <!-- Keyframes -->
+  <keyframe>
+    <key name="0" qpos="0 0 0.48 1 0 0 0 0 0.9 -1.8 0 0.9 -1.8" />
+  </keyframe>
+
+  <!-- World body -->
+  <worldbody>
+
+    <!-- Torso (floating base with 6 DOF) -->
+    <body name="base" pos="0 0 0.8">
+      <freejoint/>
+      <site name="imu" pos="0 0 0" />
+
+      <body name="torso" pos="0 0 0" childclass="biped">
+        <geom name="torso_geom" type="box" size="0.05 0.1 0.125" rgba="1 1 0 1" class="collision" />
+        <inertial pos="0 0 0" mass="10" diaginertia="0.1 0.08 0.05" />
+
+      <!-- Right Leg -->
+      <body name="right_hip_rx" pos="0 -0.075 -0.165">
+        <joint class="hip" name="right_hip_rx" type="hinge" axis="1 0 0" />
+        <geom name="right_hip_rx_geom" type="cylinder" size="0.04 0.015" pos="0.03 0 0" euler="0 1.57 0" rgba="0 1 0 1" class="visual" />
+
+        <body name="right_thigh" pos="0 0 0">
+          <joint class="hip" name="right_hip_ry" type="hinge" axis="0 1 0" />
+          <geom name="right_thigh_geom" type="cylinder" size="0.02 0.23" rgba="0 0 1 1" fromto="0 0 0 0 0 -0.23" class="visual" />
+
+          <body name="right_knee" pos="0 0 -0.23">
+            <joint class="knee" name="right_knee_ry" type="hinge" axis="0 1 0" />
+            <geom name="right_shin_geom" type="cylinder" size="0.015 0.23" rgba="0 1 0 1" fromto="0 0 0 0 0 -0.23" class="visual" />
+
+            <body name="right_foot" pos="0 0 -0.23">
+              <geom name="right_foot_geom" type="sphere" size="0.015" rgba="1 0 0 1" class="collision" />
+              <site name="right_foot" pos="0 0 0" size="0.015" rgba="0 0 0 0" />
+            </body>
+          </body>
+        </body>
+      </body>
+
+      <!-- Left Leg -->
+      <body name="left_hip_rx" pos="0 0.075 -0.165">
+        <joint class="hip" name="left_hip_rx" type="hinge" axis="1 0 0" />
+        <geom name="left_hip_rx_geom" type="cylinder" size="0.04 0.015" pos="0.03 0 0" euler="0 1.57 0" rgba="0 1 0 1" class="visual" />
+
+        <body name="left_thigh" pos="0 0 0">
+          <joint class="hip" name="left_hip_ry" type="hinge" axis="0 1 0" />
+          <geom name="left_thigh_geom" type="cylinder" size="0.02 0.23" rgba="0 0 1 1" fromto="0 0 0 0 0 -0.23" class="visual" />
+
+          <body name="left_knee" pos="0 0 -0.23">
+            <joint class="knee" name="left_knee_ry" type="hinge" axis="0 1 0" />
+            <geom name="left_shin_geom" type="cylinder" size="0.015 0.23" rgba="0 1 0 1" fromto="0 0 0 0 0 -0.23" class="visual" />
+
+            <body name="left_foot" pos="0 0 -0.23">
+              <geom name="left_foot_geom" type="sphere" size="0.015" rgba="1 0 0 1" class="collision" />
+              <site name="left_foot" pos="0 0 0" size="0.015" rgba="0 0 0 0" />
+            </body>
+          </body>
+        </body>
+      </body>
+
+      </body>
+    </body>
+  </worldbody>
+
+  <!-- Actuators -->
+  <actuator>
+    <motor name="right_hip_rx" joint="right_hip_rx" class="hip" />
+    <motor name="right_hip_ry" joint="right_hip_ry" class="hip" />
+    <motor name="right_knee_ry" joint="right_knee_ry" class="knee" />
+    <motor name="left_hip_rx" joint="left_hip_rx" class="hip" />
+    <motor name="left_hip_ry" joint="left_hip_ry" class="hip" />
+    <motor name="left_knee_ry" joint="left_knee_ry" class="knee" />
+  </actuator>
+
+  <!-- Sensors -->
+  <sensor>
+    <jointpos name="right_hip_rx_pos" joint="right_hip_rx" />
+    <jointpos name="right_hip_ry_pos" joint="right_hip_ry" />
+    <jointpos name="right_knee_ry_pos" joint="right_knee_ry" />
+    <jointpos name="left_hip_rx_pos" joint="left_hip_rx" />
+    <jointpos name="left_hip_ry_pos" joint="left_hip_ry" />
+    <jointpos name="left_knee_ry_pos" joint="left_knee_ry" />
+
+    <jointvel name="right_hip_rx_vel" joint="right_hip_rx" />
+    <jointvel name="right_hip_ry_vel" joint="right_hip_ry" />
+    <jointvel name="right_knee_ry_vel" joint="right_knee_ry" />
+    <jointvel name="left_hip_rx_vel" joint="left_hip_rx" />
+    <jointvel name="left_hip_ry_vel" joint="left_hip_ry" />
+    <jointvel name="left_knee_ry_vel" joint="left_knee_ry" />
+
+    <jointactuatorfrc name="right_hip_rx_torque" joint="right_hip_rx" />
+    <jointactuatorfrc name="right_hip_ry_torque" joint="right_hip_ry" />
+    <jointactuatorfrc name="right_knee_ry_torque" joint="right_knee_ry" />
+    <jointactuatorfrc name="left_hip_rx_torque" joint="left_hip_rx" />
+    <jointactuatorfrc name="left_hip_ry_torque" joint="left_hip_ry" />
+    <jointactuatorfrc name="left_knee_ry_torque" joint="left_knee_ry" />
+
+    <framequat name="imu_quat" objtype="site" objname="imu" />
+    <gyro name="imu_gyro" site="imu" />
+    <accelerometer name="imu_acc" site="imu" />
+    
+    <framepos name="frame_pos" objtype="site" objname="imu" />
+    <framelinvel name="frame_vel" objtype="site" objname="imu" />
+
+    <!-- <touch name="right_foot_force" site="right_foot" />
+    <touch name="left_foot_force" site="left_foot" /> -->
+  </sensor>
+
+</mujoco>
