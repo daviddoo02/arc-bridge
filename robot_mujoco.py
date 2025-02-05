@@ -7,7 +7,7 @@ import threading
 import argparse
 
 import config
-from bridges import Lcm2MujocoBridge, HopperBridge, BipedLinefootBridge
+from bridges import *
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--replay", action="store_true", help="replay state trajectory from LCM")
@@ -43,6 +43,8 @@ if config.robot_type == "hopper":
     bridge = HopperBridge(mj_model, mj_data)
 elif config.robot_type == "biped_linefoot":
     bridge = BipedLinefootBridge(mj_model, mj_data)
+elif config.robot_type == "biped_pointfoot":
+    bridge = BipedPointfootBridge(mj_model, mj_data)
 else:
     bridge = Lcm2MujocoBridge(mj_model, mj_data)
 

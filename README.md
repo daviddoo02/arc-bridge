@@ -53,5 +53,5 @@ Software bridge of a nominal robot controller to Mujoco simulator via LCM commun
 ## Supported Robot Models
 - [x] PEA Hopper
 - [x] Linefoot Biped
-- [ ] Pointfoot Biped
+- [x] Pointfoot Biped
 - [ ] LimX Tron 1
