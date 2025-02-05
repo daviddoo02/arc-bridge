@@ -11,9 +11,7 @@ class BipedLinefootBridge(Lcm2MujocoBridge):
         super().__init__(mj_model, mj_data)
 
 
-    def publish_low_state(self):
-        if self.parse_common_low_state() < 0:
-            return
+    def parse_robot_specific_low_state(self):
         
         # Send inertia matrix and bias force
         temp_inertia_mat = np.zeros((self.mj_model.nv, self.mj_model.nv))
@@ -28,7 +26,6 @@ class BipedLinefootBridge(Lcm2MujocoBridge):
         # Torso jacobians
         # J_tor
         torso_id = mujoco.mj_name2id(self.mj_model, mujoco._enums.mjtObj.mjOBJ_BODY, "torso") # id = 2
-        torso_id = 1
         torso_pos = self.low_state.position
         J_tor = np.zeros((6, self.mj_model.nv))
         mujoco.mj_jac(self.mj_model, self.mj_data, J_tor[:3, :], J_tor[3:, :], torso_pos, torso_id)
@@ -99,8 +96,3 @@ class BipedLinefootBridge(Lcm2MujocoBridge):
 
         p_gc = np.concatenate((right_heel_pos, right_toe_pos, left_heel_pos, left_toe_pos), axis=0)
         self.low_state.p_gc = p_gc.tolist()
-
-
-        # Encode and publish robot states
-        self.low_state.timestamp = time.time_ns()
-        self.lc.publish(self.topic_state, self.low_state.encode())

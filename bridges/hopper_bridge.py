@@ -17,9 +17,7 @@ class HopperBridge(Lcm2MujocoBridge):
         self.pos_est = np.array([0, 0, 0.3])
         self.R_body = np.eye(3)
 
-    def publish_low_state(self):
-        if self.parse_common_low_state() < 0:
-            return
+    def parse_robot_specific_low_state(self):
 
         # Use world frame angular rate and acceleration for state estimation
         quat = Quaternion(*self.low_state.quaternion)
@@ -74,8 +72,3 @@ class HopperBridge(Lcm2MujocoBridge):
         # Handle reset request
         if self.low_cmd.reset_se:
             self.state_estimator.reset(np.array([0, 0, height_measured, *vel_measured]))
-            
-
-        # Encode and publish robot states
-        self.low_state.timestamp = time.time_ns()
-        self.lc.publish(self.topic_state, self.low_state.encode())

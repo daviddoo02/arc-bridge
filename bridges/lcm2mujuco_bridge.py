@@ -161,8 +161,18 @@ class Lcm2MujocoBridge:
             # self.low_state.omega[:] = omega_body.tolist()
         return 0
 
-    @abstractmethod
     def publish_low_state(self):
+        if self.parse_common_low_state() < 0:
+            return
+        
+        self.parse_robot_specific_low_state()
+
+        # Encode and publish robot states
+        self.low_state.timestamp = time.time_ns()
+        self.lc.publish(self.topic_state, self.low_state.encode())
+
+    @abstractmethod
+    def parse_robot_specific_low_state(self):
         pass
 
     def print_scene_info(self):
