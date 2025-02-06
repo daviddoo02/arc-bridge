@@ -17,13 +17,10 @@ class Tron1PointfootBridge(Lcm2MujocoBridge):
         self.right_foot_name = "foot_R_collision" # geom
 
         # Override motor offsets
-        self.motor_offsets = np.array([0, 0.53, -0.55,  # right leg
+        self.joint_offsets = np.array([0, 0.53, -0.55,  # right leg
                                        0, 0.53, -0.55]) # left leg
 
     def parse_robot_specific_low_state(self):
-        # Parse joint offsets
-        for i in range(self.num_motor):
-            self.low_state.qj_pos[i] += self.motor_offsets[i]
         
         # Send inertia matrix and bias force
         temp_inertia_mat = np.zeros((self.mj_model.nv, self.mj_model.nv))
