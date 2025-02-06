@@ -40,14 +40,8 @@ if args.track:
 viewer.opt.flags[mujoco.mjtVisFlag.mjVIS_CONTACTFORCE] = True
 
 # Initialize bridge
-if config.robot_type == "hopper":
-    bridge = HopperBridge(mj_model, mj_data)
-elif config.robot_type == "biped_linefoot":
-    bridge = BipedLinefootBridge(mj_model, mj_data)
-elif config.robot_type == "biped_pointfoot":
-    bridge = BipedPointfootBridge(mj_model, mj_data)
-elif config.robot_type == "tron1_pointfoot":
-    bridge = Tron1PointfootBridge(mj_model, mj_data)
+if config.robot_type in config.valid_robot_types:
+    bridge = eval("".join([s.capitalize() for s in config.robot_type.split("_")]) + "Bridge")(mj_model, mj_data)
 else:
     bridge = Lcm2MujocoBridge(mj_model, mj_data)
 

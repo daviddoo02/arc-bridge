@@ -2,7 +2,8 @@
 dt_sim = 0.001 # Dynamics update rate
 dt_viewer = 0.02 # Viewer update rate
 robot_type = "tron1_pointfoot"
-assert robot_type in ["hopper", "biped_linefoot", "biped_pointfoot", "tron1_pointfoot"]
+valid_robot_types = ["hopper", "biped_linefoot", "biped_pointfoot", "tron1_pointfoot"]
+assert robot_type in valid_robot_types
 
 robot_state_topic = robot_type + "_state"
 robot_cmd_topic = robot_type + "_control"
