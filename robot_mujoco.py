@@ -36,6 +36,7 @@ if args.track:
 
 # Enable visualization flags
 # viewer.opt.flags[mujoco.mjtVisFlag.mjVIS_INERTIA] = True
+# viewer.opt.flags[mujoco.mjtVisFlag.mjVIS_BODYBVH] = True
 viewer.opt.flags[mujoco.mjtVisFlag.mjVIS_CONTACTFORCE] = True
 
 # Initialize bridge

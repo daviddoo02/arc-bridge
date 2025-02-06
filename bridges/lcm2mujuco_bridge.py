@@ -55,15 +55,6 @@ class Lcm2MujocoBridge:
         self.low_cmd_received = False
         self.is_running = None
 
-        if config.robot_type == "hopper":
-            # State estimator
-            self.state_estimator = HopperStateEstimator(config.dt_sim)
-            self.thr_counter = 0
-            
-            # For state estimation visualization only
-            self.pos_est = np.array([0, 0, 0.3])
-            self.R_body = np.eye(3)
-
     def start_lcm_thread(self):
         self.is_running = True
         self.lcm_handle_thread = Thread(target=self.lcmHandleThread)

@@ -168,3 +168,4 @@ lcmlog*
 *.ipynb
 *.mp4
 *.mat
+logs/

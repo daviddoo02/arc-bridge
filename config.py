@@ -6,6 +6,7 @@ assert robot_type in ["hopper", "biped_linefoot", "biped_pointfoot"]
 
 robot_state_topic = robot_type + "_state"
 robot_cmd_topic = robot_type + "_control"
+
 if robot_type == "hopper":
     robot_xml_path = "./robot_assets/Hopper/hopper_scene.xml"
 elif robot_type == "biped_linefoot":
