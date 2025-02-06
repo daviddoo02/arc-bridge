@@ -46,6 +46,8 @@ elif config.robot_type == "biped_linefoot":
     bridge = BipedLinefootBridge(mj_model, mj_data)
 elif config.robot_type == "biped_pointfoot":
     bridge = BipedPointfootBridge(mj_model, mj_data)
+elif config.robot_type == "tron1_pointfoot":
+    bridge = Tron1PointfootBridge(mj_model, mj_data)
 else:
     bridge = Lcm2MujocoBridge(mj_model, mj_data)
 

@@ -55,6 +55,9 @@ class Lcm2MujocoBridge:
         self.low_cmd_received = False
         self.is_running = None
 
+        # Motor offsets
+        self.motor_offset = np.zeros(self.num_motor)
+
     def start_lcm_thread(self):
         self.is_running = True
         self.lcm_handle_thread = Thread(target=self.lcmHandleThread)
@@ -104,7 +107,7 @@ class Lcm2MujocoBridge:
         for i in range(self.num_motor):
             ctrlrange = self.mj_model.actuator_ctrlrange[i]
             motor_tau = self.low_cmd.qj_tau[i] +\
-                        self.low_cmd.kp[i] * (self.low_cmd.qj_pos[i] - self.mj_data.sensordata[i]) +\
+                        self.low_cmd.kp[i] * (self.low_cmd.qj_pos[i] - self.mj_data.sensordata[i] - self.motor_offset[i]) +\
                         self.low_cmd.kd[i] * (self.low_cmd.qj_vel[i] - self.mj_data.sensordata[i + self.num_motor])
             self.mj_data.ctrl[i] = np.clip(motor_tau, ctrlrange[0], ctrlrange[1])
 
