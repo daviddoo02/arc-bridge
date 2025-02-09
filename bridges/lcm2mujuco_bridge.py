@@ -7,7 +7,7 @@ import numpy as np
 from threading import Thread
 
 import config
-from state_estimator import HopperStateEstimator
+from gamepad_reader import Gamepad
 from lcm_types.robot_lcm import *
 from utils import *
 
@@ -54,6 +54,15 @@ class Lcm2MujocoBridge:
 
         self.low_cmd_received = False
         self.is_running = None
+
+        # Gamepad controller
+        self.gamepad = None
+        self.gamepad_cmd = gamepad_t()
+        self.topic_gamepad = "gamepad_cmd"
+        try:
+            self.gamepad = Gamepad(0.5, 0.5, np.pi)
+        except:
+            pass
 
         # Joint zero pos offsets
         self.joint_offsets = np.zeros(self.num_motor)
@@ -168,6 +177,18 @@ class Lcm2MujocoBridge:
     @abstractmethod
     def parse_robot_specific_low_state(self):
         pass
+
+    def publish_gamepad_cmd(self):
+        if self.gamepad == None:
+            return
+
+        cmd = self.gamepad.get_command()
+        self.gamepad_cmd.timestamp = time.time_ns()
+        self.gamepad_cmd.vx = cmd[0]
+        self.gamepad_cmd.vy = cmd[1]
+        self.gamepad_cmd.wz = cmd[2]
+        self.gamepad_cmd.e_stop = cmd[3]
+        self.lc.publish(self.topic_gamepad, self.gamepad_cmd.encode())
 
     def print_scene_info(self):
         print(" ")

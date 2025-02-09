@@ -14,6 +14,7 @@ parser.add_argument("--replay", action="store_true", help="replay state trajecto
 parser.add_argument("--debug", action="store_true", help="debug mode")
 parser.add_argument("--track", action="store_true", help="make camera track the robot's motion")
 parser.add_argument("--block", action="store_true", help="block the main thread")
+parser.add_argument("--use_gamepad", action="store_true", help="use gamepad for control")
 args = parser.parse_args()
 
 # Initialize Mujoco
@@ -71,6 +72,8 @@ def SimulationThread():
                 bridge.publish_low_state()
                 bridge.update_motor_cmd()
                 bridge.low_cmd_received = False
+                if args.use_gamepad:
+                    bridge.publish_gamepad_cmd()
 
         time_until_next_step = mj_model.opt.timestep - (time.perf_counter() - step_start)
         if time_until_next_step > 0:
