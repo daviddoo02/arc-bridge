@@ -3,8 +3,12 @@ import threading
 import time
 
 MAX_ABS_VAL = 32768
+DEAD_ZONE = 1000
 
-def _interpolate(raw_reading, max_raw_reading, new_scale):
+def _interpolate(raw_reading, min_raw_reading, max_raw_reading, new_scale):
+    if abs(raw_reading) < min_raw_reading:
+        return 0.0
+
     return raw_reading / max_raw_reading * new_scale
 
 
@@ -92,12 +96,12 @@ class Gamepad:
 
         elif event.ev_type == "Absolute" and event.code == "ABS_X":
             # Left Joystick L/R axis
-            self.vy = _interpolate(-event.state, MAX_ABS_VAL, self._vel_scale_y)
+            self.vy = _interpolate(-event.state, DEAD_ZONE, MAX_ABS_VAL, self._vel_scale_y)
         elif event.ev_type == "Absolute" and event.code == "ABS_Y":
             # Left Joystick F/B axis; need to flip sign for consistency
-            self.vx = _interpolate(-event.state, MAX_ABS_VAL, self._vel_scale_x)
+            self.vx = _interpolate(-event.state, DEAD_ZONE, MAX_ABS_VAL, self._vel_scale_x)
         elif event.ev_type == "Absolute" and event.code == "ABS_RX":
-            self.wz = _interpolate(-event.state, MAX_ABS_VAL, self._vel_scale_rot)
+            self.wz = _interpolate(-event.state, DEAD_ZONE, MAX_ABS_VAL, self._vel_scale_rot)
 
         if self._estop_flagged and self._lj_pressed:
             self._estop_flagged = False

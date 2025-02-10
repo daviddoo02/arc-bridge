@@ -60,8 +60,10 @@ class Lcm2MujocoBridge:
         self.gamepad_cmd = gamepad_t()
         self.topic_gamepad = "gamepad_cmd"
         try:
-            self.gamepad = Gamepad(0.5, 0.5, np.pi)
+            self.gamepad = Gamepad(0.5, 0.5, np.pi/2)
+            print("Gamepad found")
         except:
+            print("No gamepad found")
             pass
 
         # Joint zero pos offsets
