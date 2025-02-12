@@ -57,7 +57,7 @@ class Lcm2MujocoBridge:
 
         # Gamepad controller
         self.gamepad = None
-        self.gamepad_cmd = gamepad_t()
+        self.gamepad_cmd = gamepad_cmd_t()
         self.topic_gamepad = "gamepad_cmd"
         try:
             self.gamepad = Gamepad(0.5, 0.5, np.pi/2)

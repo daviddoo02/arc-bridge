@@ -14,6 +14,8 @@ if [ $? != 0 ] ; then
         fi
     fi
 fi
+# Remove old generated types
+rm -rf $LCM_GEN
 # Make a folder to store generated types if not exists
 mkdir -p $LCM_GEN
 # Generate python types
@@ -26,3 +28,4 @@ lcm-gen -x ./*.lcm
 # java release 8 is used for compatability of MATLAB >= 2023b
 javac -cp $LCM_JAR $LCM_GEN/*.java --release 8 
 jar cf robot_types.jar $LCM_GEN/*.class
+echo "Successfully generated LCM types"
