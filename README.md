@@ -1,42 +1,42 @@
 # Robot Mujoco LCM
-Software bridge of a nominal robot controller to Mujoco simulator via LCM communication.
+Software bridge of a nominal robot controller to Mujoco simulator via LCM communication protocol.
 
 ## Dependencies
-- [Mujoco](https://github.com/google-deepmind/mujoco)
 - [LCM](https://github.com/lcm-proj/lcm)
-- Java (for LCM visualization and type generation)
+- [Mujoco](https://github.com/google-deepmind/mujoco)
+- Java (LCM type generation and visualization)
 
 ## Quick Start
-1. Make sure you have java installed. Type `javac` to verify
-2. Initialize LCM as submodule
+1. Make sure you have java installed. Type `javac` to verify.
+2. Clone this repo using **SSH** and initialize LCM as a submodule.
     ```sh
+    git clone git@github.com:ARCaD-Lab-UM/robot_mujoco_lcm.git
     git submodule update --init
     ```
-3. Build and install LCM from source by following the [official instructions](https://lcm-proj.github.io/lcm/content/build-instructions.html)
-4. Copy the compiled [`lcm.jar`](https://lcm-proj.github.io/lcm/content/java-notes.html#finding-lcm-jar) for later use
+3. Build and **install** LCM from source by following the [official instructions](https://lcm-proj.github.io/lcm/content/build-instructions.html)
+4. Copy the compiled `lcm.jar` for later use.
     ```sh
     cp lcm_types/lcm/build/lcm-java/lcm.jar lcm_types/lcm.jar
     ```
-5. Generate LCM types
+    Check [this doc]((https://lcm-proj.github.io/lcm/content/java-notes.ml#finding-lcm-jar)) to find `lcm.jar` if you install LCM from other sources.
+5. Generate LCM types.
     ```sh
     cd lcm_types
     ./gen_lcm_types.sh
     ```
-> [!WARNING]
-> Redo this step every time if any LCM types are changed (may from new commits)
-6. Install `mujoco` in your favorite python environment
+    :warning: Redo this step every time if any LCM types are changed (may from new commits).
+6. Install dependencies in your favorite python environment.
     ```sh
-    pip install mujoco lcm
+    conda activate [name]
+    pip install -r requirements.txt
     ```
-7. Select your robot type in `config.py`
-8. Run the Mujoco Viewer to simulate your robot
+7. Launch the main program.
     ```sh
     cd ..
-    python robot_mujoco.py --help
+    python robot_mujoco.py
     ```
-> [!WARNING]
-> Close the viewer to exit the program. Ctrl-C might not be captured properly due to multithreading.
-9. Spy the communication rate and plot data
+    Use `mjpython` instead of `python` for MacOS user.
+8. Spy the communication rate and plot data.
     ```sh
     cd lcm_types
     ./run_lcm_spy.sh
@@ -50,16 +50,41 @@ Software bridge of a nominal robot controller to Mujoco simulator via LCM commun
 
 
 ## Known Issues
+<details>
+    <summary>  
+        <b> Permission denied when initializing LCM as a submodule </b>
+    </summary>
 
-### GLFW Error
+Use **SSH** option to clone this repo.
+```sh
+git clone --recursive git@github.com:ARCaD-Lab-UM/robot_mujoco_lcm.git
+```
+</details>
+
+<details>
+    <summary>  
+        <b> GLFW Error </b>
+    </summary>
+
 ```sh
 GLFWError: (65542) b'GLX: No GLXFBConfigs returned'
 GLFWError: (65545) b'GLX: Failed to find a suitable GLXFBConfig'
 ERROR: could not create window
 ```
-Solutions
+Set NVIDIA GPU as primary renderer (for systems with NVIDIA GPUs)
 ```
-# Set NVIDIA GPU as primary renderer (for systems with NVIDIA GPUs)
 export __NV_PRIME_RENDER_OFFLOAD=1
 export __GLX_VENDOR_LIBRARY_NAME=nvidia
 ```
+</details>
+
+<details>
+    <summary>  
+        <b> limits.h: No such file or directory </b>
+    </summary>
+
+When compiling LCM, disable unit tests.
+```sh
+cmake .. -DLCM_ENABLE_EXAMPLES=OFF -DLCM_ENABLE_TESTS=OFF
+```
+</details>
