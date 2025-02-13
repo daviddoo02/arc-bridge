@@ -35,19 +35,22 @@ Software bridge of a nominal robot controller to Mujoco simulator via LCM commun
     cd ..
     python robot_mujoco.py
     ```
-    Use `mjpython` instead of `python` for MacOS user.
+    :warning: Use `mjpython` instead of `python` for MacOS user.
 8. Spy the communication rate and plot data.
     ```sh
     cd lcm_types
     ./run_lcm_spy.sh
     ```
 
-## Supported Robot Models
-- [x] PEA Hopper
-- [x] Linefoot Biped
-- [x] Pointfoot Biped
-- [x] LimX Tron 1 Pointfoot
+## Supported Robot & Controller
+:point_down: Click to find the corresponding controller
+- [x] [PEA Hopper](https://github.com/ARCaD-Lab-UM/hopper-kd-mpc/blob/main/HopperMain.m)
+- [x] [Linefoot Biped](https://github.com/ARCaD-Lab-UM/TrainingWheel/blob/main/ex_Cassie/MAIN_cassie_LCM.m)
+- [x] [Pointfoot Biped](https://github.com/ARCaD-Lab-UM/TrainingWheel/blob/main/ex_tron1/MAIN_tron1_LCM.m)
+- [x] [LimX Tron 1 Pointfoot](https://github.com/ARCaD-Lab-UM/TrainingWheel/blob/main/ex_tron1/MAIN_tron1_LCM.m)
 
+## Supported OS
+- Linux, macOS
 
 ## Known Issues
 <details>
