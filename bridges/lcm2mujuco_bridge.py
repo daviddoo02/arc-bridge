@@ -6,7 +6,6 @@ import numpy as np
 
 from threading import Thread
 
-import config
 from gamepad_reader import Gamepad
 from lcm_types.robot_lcm import *
 from utils import *
@@ -15,12 +14,13 @@ MOTOR_SENSOR_NUM = 3 # pos, vel, torque
 
 class Lcm2MujocoBridge:
 
-    def __init__(self, mj_model, mj_data):
+    def __init__(self, mj_model, mj_data, config):
         self.mj_model = mj_model
         self.mj_data = mj_data
 
         self.topic_state = config.robot_state_topic
         self.topic_cmd = config.robot_cmd_topic
+        self.config = config
 
         self.num_motor = self.mj_model.nu
         self.num_body_state = self.mj_model.nq - self.num_motor
@@ -61,9 +61,9 @@ class Lcm2MujocoBridge:
         self.topic_gamepad = "gamepad_cmd"
         try:
             self.gamepad = Gamepad(0.5, 0.5, np.pi/2)
-            print("Gamepad found")
+            print("=> Gamepad found")
         except:
-            print("No gamepad found")
+            print("=> No gamepad found")
             pass
 
         # Joint zero pos offsets
@@ -71,7 +71,7 @@ class Lcm2MujocoBridge:
 
     def start_lcm_thread(self):
         self.is_running = True
-        self.lcm_handle_thread = Thread(target=self.lcmHandleThread)
+        self.lcm_handle_thread = Thread(target=self.lcmHandleThread, daemon=True)
         self.lcm_handle_thread.start()
 
     def stop_lcm_thread(self):

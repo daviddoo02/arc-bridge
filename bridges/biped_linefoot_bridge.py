@@ -1,14 +1,12 @@
 import numpy as np
 import mujoco
-import time
 
-import config
 from .lcm2mujuco_bridge import Lcm2MujocoBridge
 from utils import *
 
 class BipedLinefootBridge(Lcm2MujocoBridge):
-    def __init__(self, mj_model, mj_data):
-        super().__init__(mj_model, mj_data)
+    def __init__(self, mj_model, mj_data, config):
+        super().__init__(mj_model, mj_data, config)
 
 
     def parse_robot_specific_low_state(self):

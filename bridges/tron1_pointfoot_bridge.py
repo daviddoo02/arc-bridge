@@ -1,14 +1,12 @@
 import numpy as np
 import mujoco
-import time
 
-import config
 from .lcm2mujuco_bridge import Lcm2MujocoBridge
 from utils import *
 
 class Tron1PointfootBridge(Lcm2MujocoBridge):
-    def __init__(self, mj_model, mj_data):
-        super().__init__(mj_model, mj_data)
+    def __init__(self, mj_model, mj_data, config):
+        super().__init__(mj_model, mj_data, config)
 
         self.torso_name = "base_Link" # body
         self.left_foot_link_name = "foot_L_Link" # body

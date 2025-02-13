@@ -1,16 +1,15 @@
 import numpy as np
 import time
 
-import config
 from .lcm2mujuco_bridge import Lcm2MujocoBridge
 from state_estimator import HopperStateEstimator
 from utils import *
 
 class HopperBridge(Lcm2MujocoBridge):
-    def __init__(self, mj_model, mj_data):
-        super().__init__(mj_model, mj_data)
+    def __init__(self, mj_model, mj_data, config):
+        super().__init__(mj_model, mj_data, config)
         # State estimator
-        self.state_estimator = HopperStateEstimator(config.dt_sim)
+        self.state_estimator = HopperStateEstimator(self.config.dt_sim)
         self.thr_counter = 0
         
         # For state estimation visualization only
