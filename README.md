@@ -13,7 +13,7 @@ Software bridge of a nominal robot controller to Mujoco simulator via LCM commun
     git clone git@github.com:ARCaD-Lab-UM/robot_mujoco_lcm.git
     git submodule update --init
     ```
-3. Build and **install** LCM from source by following the [official instructions](https://lcm-proj.github.io/lcm/content/build-instructions.html)
+3. Build and **install** LCM from source (under `<lcm_types/lcm>` folder) by following the [official instructions](https://lcm-proj.github.io/lcm/content/build-instructions.html)
 4. Copy the compiled `lcm.jar` for later use.
     ```sh
     cp lcm_types/lcm/build/lcm-java/lcm.jar lcm_types/lcm.jar
@@ -36,7 +36,7 @@ Software bridge of a nominal robot controller to Mujoco simulator via LCM commun
     ```
     Use `--help` to find other launching options.
    
-    :warning: Use `mjpython` instead of `python` for MacOS user.
+    :warning: Use `mjpython` instead of `python` for macOS user.
 8. Spy the communication rate and plot data.
     ```sh
     cd lcm_types
