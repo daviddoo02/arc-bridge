@@ -19,11 +19,11 @@ def SimulationThread():
             locker.acquire()
             mujoco.mj_step(mj_model, mj_data)
             locker.release()
+            bridge.publish_gamepad_cmd()
             if not args.replay:
                 bridge.publish_low_state()
                 bridge.update_motor_cmd()
                 bridge.low_cmd_received = False
-                bridge.publish_gamepad_cmd()
 
         time_until_next_step = mj_model.opt.timestep - (time.perf_counter() - step_start)
         if time_until_next_step > 0:
