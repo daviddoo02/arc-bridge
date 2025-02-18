@@ -36,6 +36,7 @@ echo "Found LCM jar file: $LCM_JAR"
 
 # Remove old generated types
 rm -rf $LCM_GEN_DIR
+rm -f $LCM_TYPE_JAR
 # Make a folder to store generated types if not exists
 mkdir -p $LCM_GEN_DIR
 # Generate python types

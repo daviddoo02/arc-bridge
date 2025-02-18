@@ -22,14 +22,14 @@ struct biped_pointfoot_state_t
     double   inertia_mat[12][12]; // 6 + num_joint
     double   bias_force[12];
 
-    // joint velocity to task space torso twist
+    // [v_world, w_body, qj_vel] -> [v_world, w_world]
     double   J_tor[6][12];
     double   dJdq_tor[6];
 
-    // joint velocity to task space foot velocity
+    // [v_world, w_body, qj_vel] -> [v_right_foot_world, v_left_foot_world]
     double   J_gc[6][12];
     double   dJdq_gc[6];
 
-    // position of heels and toes
+    // [p_right_foot_world, p_left_foot_world]
     double   p_gc[6];
 }
