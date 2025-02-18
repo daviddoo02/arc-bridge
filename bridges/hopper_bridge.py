@@ -2,7 +2,7 @@ import numpy as np
 import time
 
 from .lcm2mujuco_bridge import Lcm2MujocoBridge
-from state_estimator import HopperStateEstimator
+from state_estimators import HopperStateEstimator
 from utils import *
 
 class HopperBridge(Lcm2MujocoBridge):
