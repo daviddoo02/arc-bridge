@@ -1,5 +1,6 @@
-import numpy as np
 import mujoco
+import numpy as np
+import pinocchio as pin
 
 from .lcm2mujuco_bridge import Lcm2MujocoBridge
 from utils import *
@@ -18,8 +19,19 @@ class Tron1PointfootBridge(Lcm2MujocoBridge):
         self.joint_offsets = np.array([0, 0.53, -0.55,  # right leg
                                        0, 0.53, -0.55]) # left leg
 
-    def parse_robot_specific_low_state(self):
-        
+        # Pinocchio model
+        self.pin_model = pin.buildModelFromMJCF(self.config.robot_xml_path)
+        self.pin_data = self.pin_model.createData()
+
+    def parse_robot_specific_low_state(self, backend="pinocchio"):
+        # Parse common robot states to low_state first
+        # Required fields: position, quaternion, velocity, omega, qj_pos, qj_vel
+        if backend == "pinocchio":
+            self.update_kinematics_and_dynamics_pinocchio()
+        else:
+            self.update_kinematics_and_dynamics_mujoco()
+
+    def update_kinematics_and_dynamics_mujoco(self):        
         # Send inertia matrix and bias force
         temp_inertia_mat = np.zeros((self.mj_model.nv, self.mj_model.nv))
         mujoco.mj_fullM(self.mj_model, temp_inertia_mat, self.mj_data.qM)
@@ -28,6 +40,7 @@ class Tron1PointfootBridge(Lcm2MujocoBridge):
 
         # Parse J and dJdq
         # np.set_printoptions(precision=4, suppress=True, linewidth=1000)
+        #* dq = [v_world, omega_body, qj_vel]
         dq = np.concatenate((self.low_state.velocity, self.low_state.omega, self.low_state.qj_vel), axis=0)
         
         # Torso jacobians
@@ -73,6 +86,7 @@ class Tron1PointfootBridge(Lcm2MujocoBridge):
         mujoco.mj_jacDot(self.mj_model, self.mj_data, dJ_foot_R, None, right_foot_pos, right_foot_link_id)
         dJdq_foot_R = dJ_foot_R @ dq
 
+        # Assemble gc jacobians
         J_gc = np.concatenate((J_lin_foot_R, J_lin_foot_L), axis=0)
         self.low_state.J_gc = J_gc.tolist()
 
@@ -80,4 +94,129 @@ class Tron1PointfootBridge(Lcm2MujocoBridge):
         self.low_state.dJdq_gc = dJdq_gc.tolist()
 
         p_gc = np.concatenate((right_foot_pos, left_foot_pos), axis=0)
+        self.low_state.p_gc = p_gc.tolist()
+
+    def update_kinematics_and_dynamics_pinocchio(self):
+        # Pinocchio computations
+        # np.set_printoptions(precision=4, suppress=True, linewidth=1000)
+
+        #* dq = [v_world, omega_body, qj_vel] in Mujoco conventions
+        dq = np.concatenate((self.low_state.velocity, self.low_state.omega, self.low_state.qj_vel), axis=0)
+
+        #* q = [pos, quat(xyzw), qj_pos] in Pinocchio conventions
+        pin_q = np.zeros(self.pin_model.nq)
+        pin_q[:3] = self.low_state.position.copy()
+        pin_q[3:7] = quat_wxyz_to_xyzw(self.low_state.quaternion) # Pinocchio uses xyzw
+        pin_q[7:] = self.low_state.qj_pos.copy()
+        # print(f"q: {q}")
+
+        #* v = [v_body, omega_body, qj_vel] in Pinocchio conventions
+        R_body_to_world = pin.Quaternion(pin_q[3:7]).toRotationMatrix()
+        pin_v = dq.copy()
+        pin_v[:3] = R_body_to_world.T @ dq[:3] # velocity in body frame
+        # print(f"dq: {v}")
+
+        # Update forward kinematics, dynamics and frame placements in Pinocchio
+        pin.computeAllTerms(self.pin_model, self.pin_data, pin_q, pin_v)
+        pin.updateFramePlacements(self.pin_model, self.pin_data)
+
+        # H and C
+        T_H = np.eye(self.pin_model.nv)
+        T_H[:3, :3] = R_body_to_world
+        H_prime = T_H @ self.pin_data.M @ T_H.T
+        v_temp = np.zeros((self.pin_model.nv))
+        v_temp[:3] = np.cross(R_body_to_world @ pin_v[3:6], dq[:3])
+        C_prime = T_H @ self.pin_data.nle - H_prime @ v_temp
+        # print(f"H:\n{self.pin_data.M}")
+        # print(f"H:\n{temp_inertia_mat}")
+        # print(f"H_diff:\n{H_temp - temp_inertia_mat}")
+        # print(f"C_diff:\n{C_temp - self.mj_data.qfrc_bias}")
+        # assert(np.allclose(self.low_state.inertia_mat, H_prime, atol=1e-5))
+        # assert(np.allclose(self.low_state.bias_force, C_prime, atol=1e-5))
+        self.low_state.inertia_mat = H_prime.tolist()
+        self.low_state.bias_force = C_prime.tolist()
+
+        # J_tor
+        J_geom_tor = pin.getFrameJacobian(self.pin_model, 
+                                          self.pin_data, 
+                                          self.pin_model.getFrameId("base_Link"), 
+                                          pin.WORLD) # J_G maps body velocity to world twist
+        J_G_to_A = np.eye(3, 6)
+        J_G_to_A[:3, 3:] = - pin.skew(pin_q[:3])
+        J_lin_tor = J_G_to_A @ J_geom_tor @ T_H.T
+        J_tor = np.concatenate((J_lin_tor, J_geom_tor[3:, :]), axis=0)
+        # print(f"J_geom_tor:\n{J_geom_tor}")
+        # print(f"J_tor:\n{J_tor}")
+        # assert(np.allclose(self.low_state.J_tor, J_tor, atol=1e-5))
+        self.low_state.J_tor = J_tor.tolist()
+
+        # dJdq_tor
+        dJ_geom_tor = pin.frameJacobianTimeVariation(self.pin_model, 
+                                                self.pin_data,
+                                                pin_q,
+                                                pin_v,
+                                                self.pin_model.getFrameId("base_Link"), 
+                                                pin.WORLD)
+        dT_H = np.zeros((self.pin_model.nv, self.pin_model.nv))
+        dT_H[:3, :3] = - pin.skew(pin_v[3:6]) @ R_body_to_world.T
+        dJ_lin_tor = J_G_to_A @ (dJ_geom_tor @ T_H.T + J_geom_tor @ dT_H) #- pin.skew(dq[:3]) @ J_geom_tor[3:, :] @ T_H.T
+        dJ_tor = np.concatenate((dJ_lin_tor, dJ_geom_tor[3:, :]), axis=0)
+        dJdq_tor = dJ_tor @ dq
+        # assert(np.allclose(self.low_state.dJdq_tor, dJdq_tor, atol=1e-5))
+        self.low_state.dJdq_tor = dJdq_tor.tolist()
+
+        # J_lin_foot_L
+        J_geom_foot_L = pin.getFrameJacobian(self.pin_model, 
+                                             self.pin_data, 
+                                             self.pin_model.getFrameId("foot_L_Link"), 
+                                             pin.WORLD)
+        left_foot_pos = self.pin_data.oMf[self.pin_model.getFrameId("foot_L_Link")].translation
+        J_lin_foot_L_G_to_A = np.eye(3, 6)
+        J_lin_foot_L_G_to_A[:, 3:] = -pin.skew(left_foot_pos)
+        J_lin_foot_L = J_lin_foot_L_G_to_A @ J_geom_foot_L @ T_H.T
+
+        # dJdq_foot_L
+        dJ_geom_foot_L = pin.frameJacobianTimeVariation(self.pin_model, 
+                                                        self.pin_data,
+                                                        pin_q,
+                                                        pin_v,
+                                                        self.pin_model.getFrameId("foot_L_Link"), 
+                                                        pin.WORLD)
+        dJ_lin_foot_L = J_lin_foot_L_G_to_A @ (dJ_geom_foot_L @ T_H.T + J_geom_foot_L @ dT_H)
+        dJdq_foot_L = dJ_lin_foot_L @ dq
+
+        # J_lin_foot_R
+        J_geom_foot_R = pin.getFrameJacobian(self.pin_model, 
+                                             self.pin_data, 
+                                             self.pin_model.getFrameId("foot_R_Link"), 
+                                             pin.WORLD)
+        right_foot_pos = self.pin_data.oMf[self.pin_model.getFrameId("foot_R_Link")].translation
+        J_lin_foot_R_G_to_A = np.eye(3, 6)
+        J_lin_foot_R_G_to_A[:, 3:] = -pin.skew(right_foot_pos)
+        J_lin_foot_R = J_lin_foot_R_G_to_A @ J_geom_foot_R @ T_H.T
+
+        # dJdq_foot_R
+        dJ_geom_foot_R = pin.frameJacobianTimeVariation(self.pin_model, 
+                                                        self.pin_data,
+                                                        pin_q,
+                                                        pin_v,
+                                                        self.pin_model.getFrameId("foot_R_Link"), 
+                                                        pin.WORLD)
+        dJ_lin_foot_R = J_lin_foot_R_G_to_A @ (dJ_geom_foot_R @ T_H.T + J_geom_foot_R @ dT_H)
+        dJdq_foot_R = dJ_lin_foot_R @ dq
+
+        # Assemble gc jacobians
+        # J_gc
+        J_gc = np.concatenate((J_lin_foot_R, J_lin_foot_L), axis=0)
+        # assert(np.allclose(self.low_state.J_gc, J_gc, atol=1e-5))
+        self.low_state.J_gc = J_gc.tolist()
+
+        # dJdq_gc
+        dJdq_gc = np.concatenate((dJdq_foot_R, dJdq_foot_L), axis=0)
+        # assert(np.allclose(self.low_state.dJdq_gc, dJdq_gc, atol=1e-5))
+        self.low_state.dJdq_gc = dJdq_gc.tolist()
+
+        # p_gc
+        p_gc = np.concatenate((right_foot_pos, left_foot_pos), axis=0)
+        # assert(np.allclose(self.low_state.p_gc, p_gc, atol=1e-5))
         self.low_state.p_gc = p_gc.tolist()

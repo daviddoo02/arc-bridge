@@ -64,3 +64,9 @@ def quat_to_rot(q:Quaternion) -> np.ndarray:
                   1 - 2 * (e1 * e1 + e2 * e2)], 
                   dtype=DTYPE).reshape((3,3))
     return R
+
+def quat_wxyz_to_xyzw(q):
+    """
+    Convert a quaternion from (w, x, y, z) to (x, y, z, w) format.
+    """
+    return np.array([q[1], q[2], q[3], q[0]])
