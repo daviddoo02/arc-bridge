@@ -1,0 +1,89 @@
+<mujoco model="arm2link">
+  <!-- Mujoco Options -->
+  <compiler angle="radian" meshdir="meshes" autolimits="true" />
+  <option cone="elliptic" impratio="100" />
+
+  <!-- Macros -->
+  <default>
+    <default class="arm">
+      <geom friction="1.0" margin="0.001" condim="1" />
+      <joint axis="0 1 0" damping="0.1" armature="0.01" frictionloss="0.2" range="-3.1415 3.1415"/>
+      <motor ctrlrange="-30 30"/>
+      <default class="visual">
+        <geom type="mesh" contype="0" conaffinity="0" group="2"/>
+      </default>
+      <default class="collision">
+        <geom group="2"/>
+      </default>
+    </default>
+  </default>
+
+  <!-- Default Configuration -->
+  <keyframe>
+    <key name="0" qpos="0 0" />
+  </keyframe>
+
+  <!-- Model Descripton -->
+  <worldbody>
+    <!-- Light and ground -->
+    <light pos="0 0 1.5" dir="0 0 -1" directional="true"/>
+    <geom name="floor" size="0 0 0.05" type="plane" material="groundplane"/>
+
+    <!-- Robot -->
+    <body name="base_link" pos="0 0 0.1" childclass="arm">
+      <geom type="cylinder" size="0.2 0.1" pos="0 0 0" class="visual" />
+      <geom type="cylinder" size="0.05" fromto="0 0 0.1 0 0 0.2" rgba="0 0 1 1" class="visual" />
+
+      <body name="link_1" pos="0 0 0.2">
+        <joint name="joint_1" axis="0 1 0"/>
+        <geom type="cylinder" size="0.05" fromto="0 0 0 0 0 0.5" rgba="0 1 0 1" class="visual" />
+        <inertial pos="0 0 0.25" mass="0.5" diaginertia="0.01 0.01 0.0007" />
+
+        <body name="link_2" pos="0 0 0.5">
+          <joint name="joint_2" axis="0 1 0"/>
+          <geom type="cylinder" size="0.05" fromto="0 0 0 0 0 1" rgba="1 1 0 1" class="collision" />
+          <inertial pos="0 0 0.5" mass="1" diaginertia="0.08 0.08 0.0013" />
+
+          <body name="end_effector" pos="0 0 1">
+            <geom type="sphere" size="0.05" rgba="1 0 0 1" priority="1" condim="6" friction="1.0 0.02 0.01" class="collision"/>
+          </body>
+        </body>
+      </body>
+    </body>
+  </worldbody>
+
+  <actuator>
+    <motor name="joint_1_motor" joint="joint_1" class="arm"/>
+    <motor name="joint_2_motor" joint="joint_2" class="arm"/>
+  </actuator>
+
+  <sensor>
+    <jointpos name="joint_1_pos" joint="joint_1" />
+    <jointpos name="joint_2_pos" joint="joint_2" />
+
+    <jointvel name="joint_1_vel" joint="joint_1" />
+    <jointvel name="joint_2_vel" joint="joint_2" />
+
+    <jointactuatorfrc name="joint_1_torque" joint="joint_1" />
+    <jointactuatorfrc name="joint_2_torque" joint="joint_2" />
+
+    <touch name="end_effector_touch" site="end_effector_site" />
+  </sensor>
+
+  <asset>
+    <material name="metal" rgba=".9 .95 .95 1" />
+    <material name="black" rgba="0 0 0 1" />
+    <material name="white" rgba="1 1 1 1" />
+    <material name="gray" rgba="0.671705 0.692426 0.774270 1" />
+    <texture type="skybox" builtin="gradient" rgb1="0.3 0.5 0.7" rgb2="0 0 0" width="512" height="3072"/>
+    <texture type="2d" name="groundplane" builtin="checker" mark="edge" rgb1="0.2 0.3 0.4" rgb2="0.1 0.2 0.3" markrgb="0.8 0.8 0.8" width="300" height="300"/>
+    <material name="groundplane" texture="groundplane" texuniform="true" texrepeat="5 5" reflectance="0.2"/>
+  </asset>
+
+  <visual>
+    <global azimuth="-90" elevation="-20"/>
+    <headlight diffuse="0.6 0.6 0.6" ambient="0.3 0.3 0.3" specular="0 0 0"/>
+    <rgba haze="0.15 0.25 0.35 1"/>
+  </visual>
+
+</mujoco>

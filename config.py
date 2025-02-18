@@ -7,7 +7,8 @@ class Config:
         "hopper":           "./robot_assets/Hopper/hopper_scene.xml",
         "biped_linefoot":   "./robot_assets/BipedLinefoot/biped_linefoot_scene.xml",
         "biped_pointfoot":  "./robot_assets/BipedPointfoot/biped_pointfoot_scene.xml",
-        "tron1_pointfoot":  "./robot_assets/Tron1Pointfoot/xml/robot.xml"
+        "tron1_pointfoot":  "./robot_assets/Tron1Pointfoot/xml/robot.xml",
+        "arm2link":         "./robot_assets/Arm2Link/arm2link_sensing.xml",
     }
     valid_robot_types = list(robot_path_dict.keys())
 

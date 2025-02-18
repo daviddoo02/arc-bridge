@@ -1,0 +1,19 @@
+package robot_lcm;
+
+struct arm2link_control_t
+{
+    int64_t  timestamp;
+
+    const int32_t num_joint=2;
+
+    double   qj_tau[num_joint];
+
+    double   qj_pos[num_joint];
+    double   qj_vel[num_joint];
+
+    double   kp[num_joint];
+    double   kd[num_joint];
+
+    int32_t  num_ext_actuator;
+    double   ext_actuation[num_ext_actuator];
+}

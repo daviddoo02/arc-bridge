@@ -49,6 +49,7 @@ Software bridge of a nominal robot controller to Mujoco simulator via LCM commun
 - [x] [Linefoot Biped](https://github.com/ARCaD-Lab-UM/TrainingWheel/blob/main/ex_Cassie/MAIN_cassie_LCM.m)
 - [x] [Pointfoot Biped](https://github.com/ARCaD-Lab-UM/TrainingWheel/blob/main/ex_tron1/MAIN_tron1_LCM.m)
 - [x] [LimX Tron 1 Pointfoot](https://github.com/ARCaD-Lab-UM/TrainingWheel/blob/main/ex_tron1/MAIN_tron1_LCM.m)
+- [x] 2 Link Arm
 
 ## Supported OS
 - Linux, macOS

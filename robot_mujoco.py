@@ -96,7 +96,12 @@ if __name__ == "__main__":
     viewer.opt.flags[mujoco.mjtVisFlag.mjVIS_CONTACTFORCE] = True
 
     # Initialize bridge
-    bridge = eval("".join([s.capitalize() for s in robot_type.split("_")]) + "Bridge")(mj_model, mj_data, robot_config)
+    try:
+        bridge_name = "".join([s.capitalize() for s in robot_type.split("_")]) + "Bridge"
+        bridge = eval(bridge_name)(mj_model, mj_data, robot_config)
+    except:
+        bridge = Lcm2MujocoBridge(mj_model, mj_data, robot_config)
+        print(f"{bridge_name} for {robot_type} not implemented. Using default bridge.")
 
     if args.replay:
         bridge.register_low_state_subscriber("HOPPER_STATE") # Capitalized for hardware topic name

@@ -3,3 +3,5 @@ from .hopper_bridge import HopperBridge
 from .biped_linefoot_bridge import BipedLinefootBridge
 from .biped_pointfoot_bridge import BipedPointfootBridge
 from .tron1_pointfoot_bridge import Tron1PointfootBridge
+from .arm2link_bridge import Arm2linkBridge
+# TODO make this automatic
