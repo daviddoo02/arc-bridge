@@ -13,8 +13,10 @@ class HopperBridge(Lcm2MujocoBridge):
         self.thr_counter = 0
         
         # For state estimation visualization only
-        self.pos_est = np.array([0, 0, 0.3])
-        self.R_body = np.eye(3)
+        self.vis_se = True
+        self.vis_pos_est = np.array([0, 0, 0.3])
+        self.vis_R_body = np.eye(3)
+        self.vis_box_size = [0.2, 0.02, 0.02]
 
     def parse_robot_specific_low_state(self):
 
@@ -26,9 +28,9 @@ class HopperBridge(Lcm2MujocoBridge):
         omega_world = R_body @ omega_body
         self.low_state.omega[:] = omega_world.tolist() # overwrite omega
 
-        accel_body = self.mj_data.sensordata[self.dim_motor_sensor + 7:self.dim_motor_sensor + 10]
+        accel_body = self.low_state.acceleration
         accel_world = R_body @ accel_body + np.array([0, 0, -9.8])
-        self.low_state.acceleration[:] = accel_world.tolist()
+        self.low_state.acceleration[:] = accel_world.tolist() # overwrite acceleration
 
         omega_body = self.mj_data.sensordata[self.dim_motor_sensor + 4:self.dim_motor_sensor + 7]
 
@@ -65,8 +67,8 @@ class HopperBridge(Lcm2MujocoBridge):
         vel_est = se_state[3:]
         self.low_state.position[:] = pos_est.tolist()
         self.low_state.velocity[:] = vel_est.tolist()
-        self.pos_est = self.low_state.position.copy()
-        self.R_body = R_body
+        self.vis_pos_est = pos_est
+        self.vis_R_body = R_body
 
         # Handle reset request
         if self.low_cmd.reset_se:

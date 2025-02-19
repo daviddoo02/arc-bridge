@@ -69,6 +69,9 @@ class Lcm2MujocoBridge:
         # Joint zero pos offsets
         self.joint_offsets = np.zeros(self.num_motor)
 
+        # State estimator visualization
+        self.vis_se = False
+
     def start_lcm_thread(self):
         self.is_running = True
         self.lcm_handle_thread = Thread(target=self.lcmHandleThread, daemon=True)

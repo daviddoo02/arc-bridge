@@ -1,6 +1,7 @@
 import numpy as np
 from .kalman_filter import KalmanFilter
 
+# TODO deprecate this class
 class HopperStateEstimator(KalmanFilter):
 
     def __init__(self, dt):
