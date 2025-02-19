@@ -1,1 +1,3 @@
+from .kalman_filter import KalmanFilter
 from .hopper_state_estimator import HopperStateEstimator
+from .floating_base_linear_state_estimator import FloatingBaseLinearStateEstimator
