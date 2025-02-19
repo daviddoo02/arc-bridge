@@ -31,7 +31,7 @@ class Tron1PointfootBridge(Lcm2MujocoBridge):
         else:
             self.update_kinematics_and_dynamics_mujoco()
 
-    def update_kinematics_and_dynamics_mujoco(self):        
+    def update_kinematics_and_dynamics_mujoco(self):
         # Send inertia matrix and bias force
         temp_inertia_mat = np.zeros((self.mj_model.nv, self.mj_model.nv))
         mujoco.mj_fullM(self.mj_model, temp_inertia_mat, self.mj_data.qM)
@@ -107,14 +107,14 @@ class Tron1PointfootBridge(Lcm2MujocoBridge):
         pin_q = np.zeros(self.pin_model.nq)
         pin_q[:3] = self.low_state.position.copy()
         pin_q[3:7] = quat_wxyz_to_xyzw(self.low_state.quaternion) # Pinocchio uses xyzw
-        pin_q[7:] = self.low_state.qj_pos.copy()
-        # print(f"q: {q}")
+        pin_q[7:] = np.array(self.low_state.qj_pos) - self.joint_offsets
+        # print(f"q: {pin_q}")
 
         #* v = [v_body, omega_body, qj_vel] in Pinocchio conventions
         R_body_to_world = pin.Quaternion(pin_q[3:7]).toRotationMatrix()
         pin_v = dq.copy()
         pin_v[:3] = R_body_to_world.T @ dq[:3] # velocity in body frame
-        # print(f"dq: {v}")
+        # print(f"dq: {pin_v}")
 
         # Update forward kinematics, dynamics and frame placements in Pinocchio
         pin.computeAllTerms(self.pin_model, self.pin_data, pin_q, pin_v)
@@ -129,8 +129,8 @@ class Tron1PointfootBridge(Lcm2MujocoBridge):
         C_prime = T_H @ self.pin_data.nle - H_prime @ v_temp
         # print(f"H:\n{self.pin_data.M}")
         # print(f"H:\n{temp_inertia_mat}")
-        # print(f"H_diff:\n{H_temp - temp_inertia_mat}")
-        # print(f"C_diff:\n{C_temp - self.mj_data.qfrc_bias}")
+        # print(f"H_diff:\n{H_prime - temp_inertia_mat}")
+        # print(f"C_diff:\n{C_prime - self.mj_data.qfrc_bias}")
         # assert(np.allclose(self.low_state.inertia_mat, H_prime, atol=1e-5))
         # assert(np.allclose(self.low_state.bias_force, C_prime, atol=1e-5))
         self.low_state.inertia_mat = H_prime.tolist()
