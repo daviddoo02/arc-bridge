@@ -42,13 +42,6 @@ class Tron1PointfootBridge(Lcm2MujocoBridge):
         self.vis_R_body = np.eye(3)
         self.vis_box_size = [0.1, 0.1, 0.08]
 
-        # Initialize Pinocchio data
-        pin_q = np.zeros(self.pin_model.nq)
-        pin_q[:3] = self.low_state.position.copy()
-        pin_q[3:7] = quat_wxyz_to_xyzw(self.low_state.quaternion)
-        pin.computeAllTerms(self.pin_model, self.pin_data, pin_q, np.zeros(self.pin_model.nv))
-        pin.updateFramePlacements(self.pin_model, self.pin_data)
-
     def update_state_estimation(self):
         # Retrive states from IMU readings
         omega_body = self.low_state.omega
@@ -65,15 +58,15 @@ class Tron1PointfootBridge(Lcm2MujocoBridge):
         se_state = self.KF.predict(acc_world + np.array([0, 0, -9.81]))
 
         # Correct based on foot contact
-        # if self.low_cmd.contact[0] == 1: # right foot contact
-        if self.low_state.foot_force[0] > 0: # right foot contact
+        if self.low_cmd.contact[0] == 1: # right foot contact
+        # if self.low_state.foot_force[0] > 0: # right foot contact
             foot_pos_world = self.pin_data.oMf[self.pin_model.getFrameId("foot_R_Link")].translation
             height_measured = (pos_world - foot_pos_world)[-1] + self.foot_radius
             vel_measured = vel_world
             se_state = self.KF.correct(np.append(height_measured, vel_measured))
 
-        # if self.low_cmd.contact[1] == 1: # left foot contact
-        if self.low_state.foot_force[1] > 0: # left foot contact
+        if self.low_cmd.contact[1] == 1: # left foot contact
+        # if self.low_state.foot_force[1] > 0: # left foot contact
             foot_pos_world = self.pin_data.oMf[self.pin_model.getFrameId("foot_L_Link")].translation
             height_measured = (pos_world - foot_pos_world)[-1] + self.foot_radius
             vel_measured = vel_world
@@ -93,9 +86,33 @@ class Tron1PointfootBridge(Lcm2MujocoBridge):
     def parse_robot_specific_low_state(self, backend="pinocchio"):
         # Parse common robot states to low_state first
         # Required fields: position, quaternion, velocity, omega, qj_pos, qj_vel
+
         if backend == "pinocchio":
+            # Overwrite position to (0, 0, pz)
+            self.low_state.position[0] = 0
+            self.low_state.position[1] = 0
+
+            #* q = [pos, quat(xyzw), qj_pos] in Pinocchio conventions
+            pin_q = np.zeros(self.pin_model.nq)
+            pin_q[:3] = self.low_state.position.copy()
+            pin_q[3:7] = quat_wxyz_to_xyzw(self.low_state.quaternion) # Pinocchio uses xyzw
+            pin_q[7:] = np.array(self.low_state.qj_pos) - self.joint_offsets
+            # print(f"q: {pin_q}")
+
+            #* v = [v_body, omega_body, qj_vel] in Pinocchio conventions
+            R_body_to_world = pin.Quaternion(pin_q[3:7]).toRotationMatrix()
+            pin_v = np.concatenate((R_body_to_world.T @ self.low_state.velocity, self.low_state.omega, self.low_state.qj_vel), axis=0)
+            # print(f"dq: {pin_v}")
+
+            # Update forward kinematics, dynamics and frame placements in Pinocchio
+            pin.computeAllTerms(self.pin_model, self.pin_data, pin_q, pin_v)
+            pin.updateFramePlacements(self.pin_model, self.pin_data)
+
+            # Update low_state.position[2] and low_state.velocity
             self.update_state_estimation()
-            self.update_kinematics_and_dynamics_pinocchio()
+
+            # Retrive states from Pinocchio data
+            self.update_kinematics_and_dynamics_pinocchio(pin_q, pin_v) # TODO change a better name
         else:
             self.update_kinematics_and_dynamics_mujoco()
 
@@ -164,33 +181,13 @@ class Tron1PointfootBridge(Lcm2MujocoBridge):
         p_gc = np.concatenate((right_foot_pos, left_foot_pos), axis=0)
         self.low_state.p_gc = p_gc.tolist()
 
-    def update_kinematics_and_dynamics_pinocchio(self):
+    def update_kinematics_and_dynamics_pinocchio(self, pin_q, pin_v):
         # Pinocchio computations
         # np.set_printoptions(precision=4, suppress=True, linewidth=1000)
 
-        # Overwrite position to (0, 0, pz)
-        self.low_state.position[0] = 0
-        self.low_state.position[1] = 0
-
+        R_body_to_world = pin.Quaternion(pin_q[3:7]).toRotationMatrix()
         #* dq = [v_world, omega_body, qj_vel] in Mujoco conventions
         dq = np.concatenate((self.low_state.velocity, self.low_state.omega, self.low_state.qj_vel), axis=0)
-
-        #* q = [pos, quat(xyzw), qj_pos] in Pinocchio conventions
-        pin_q = np.zeros(self.pin_model.nq)
-        pin_q[:3] = self.low_state.position.copy()
-        pin_q[3:7] = quat_wxyz_to_xyzw(self.low_state.quaternion) # Pinocchio uses xyzw
-        pin_q[7:] = np.array(self.low_state.qj_pos) - self.joint_offsets
-        # print(f"q: {pin_q}")
-
-        #* v = [v_body, omega_body, qj_vel] in Pinocchio conventions
-        R_body_to_world = pin.Quaternion(pin_q[3:7]).toRotationMatrix()
-        pin_v = dq.copy()
-        pin_v[:3] = R_body_to_world.T @ dq[:3] # velocity in body frame
-        # print(f"dq: {pin_v}")
-
-        # Update forward kinematics, dynamics and frame placements in Pinocchio
-        pin.computeAllTerms(self.pin_model, self.pin_data, pin_q, pin_v)
-        pin.updateFramePlacements(self.pin_model, self.pin_data)
 
         # H and C
         T_H = np.eye(self.pin_model.nv)
