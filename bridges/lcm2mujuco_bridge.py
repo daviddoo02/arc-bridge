@@ -40,8 +40,7 @@ class Lcm2MujocoBridge:
                 self.have_imu = True
             if name == "frame_pos":
                 self.have_frame_sensor = True
-            if name == "foot_force":
-                # TODO make this more general
+            if "foot_force" in name:
                 self.have_foot_sensor = True
 
         self.print_scene_info()
@@ -146,8 +145,8 @@ class Lcm2MujocoBridge:
 
         if self.have_foot_sensor:
             # Ground truth contact sensing
-            # TODO make this more general
-            self.low_state.foot_force = self.mj_data.sensordata[self.dim_motor_sensor + 16]
+            for idx in range(len(self.low_state.foot_force)):
+                self.low_state.foot_force[idx] = self.mj_data.sensordata[self.dim_motor_sensor + 16 + idx]
 
         if self.have_imu:
             self.low_state.quaternion[0] = self.mj_data.sensordata[self.dim_motor_sensor + 0]

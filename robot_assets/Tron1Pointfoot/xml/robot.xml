@@ -73,6 +73,7 @@
                             <inertial pos="0 0 0" quat="1 0 0 0" mass="0.1" diaginertia=" 4e-5 4e-5 4e-5" />
                             <geom class="visual" pos="0 0 0" rgba="0.26667 0.26667 0.26667 1" mesh="foot_L_Link" />
                             <geom name="foot_R_collision" type="sphere" pos="0 0 0" size="0.032" rgba="0 0 1 0" />
+                            <site name="foot_R_site" pos="0 0 0" size="0.032" />
                         </body>
                     </body>
                 </body>
@@ -100,6 +101,7 @@
                             <inertial pos="0 0 0" quat="1 0 0 0" mass="0.1" diaginertia=" 4e-5 4e-5 4e-5" />
                             <geom class="visual" pos="0 0 0" rgba="0.26667 0.26667 0.26667 1" mesh="foot_L_Link" />
                             <geom name="foot_L_collision" type="sphere" pos="0 0 0" size="0.032" rgba="0 0 1 0" />
+                            <site name="foot_L_site" pos="0 0 0" size="0.032" />
                         </body>
                     </body>
                 </body>
@@ -145,6 +147,9 @@
 
         <framepos name="frame_pos" objtype="site" objname="imu" />
         <framelinvel name="frame_vel" objtype="site" objname="imu" />
+
+        <touch name="foot_force_R" site="foot_R_site" />
+        <touch name="foot_force_L" site="foot_L_site" />
     </sensor>
 
 </mujoco>
