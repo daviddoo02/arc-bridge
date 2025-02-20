@@ -27,19 +27,27 @@ class Tron1PointfootBridge(Lcm2MujocoBridge):
         # State estimator
         height_init = 0.85
         # Process noise (px, py, pz, vx, vy, vz)
-        KF_Q = np.diag([0.002, 0.002, 0.002, 0.02, 0.02, 0.02])
+        KF_Q = np.diag([0.002, 0.002, 0.002, 0.02, 0.02, 0.02]) * 2e-3
         # Measurement noise (pz, vx, vy, vz)
         KF_R = np.diag([0.001, 0.1, 0.1, 0.1])
         self.KF = FloatingBaseLinearStateEstimator(self.config.dt_sim, KF_Q, KF_R, height_init)
         self.low_state.position = [0, 0, height_init]
         self.low_state.quaternion = [1, 0, 0, 0] # wxyz
         self.low_cmd.contact = [True, True]
+        self.foot_radius = 0.04
 
         # Visualization
         self.vis_se = True # override default flag
         self.vis_pos_est = np.array([0, 0, height_init])
         self.vis_R_body = np.eye(3)
         self.vis_box_size = [0.1, 0.1, 0.08]
+
+        # Initialize Pinocchio data
+        pin_q = np.zeros(self.pin_model.nq)
+        pin_q[:3] = self.low_state.position.copy()
+        pin_q[3:7] = quat_wxyz_to_xyzw(self.low_state.quaternion)
+        pin.computeAllTerms(self.pin_model, self.pin_data, pin_q, np.zeros(self.pin_model.nv))
+        pin.updateFramePlacements(self.pin_model, self.pin_data)
 
     def update_state_estimation(self):
         # Retrive states from IMU readings
@@ -51,7 +59,6 @@ class Tron1PointfootBridge(Lcm2MujocoBridge):
         pos_world = self.pin_data.oMf[self.pin_model.getFrameId("base_Link")].translation
         vel_body = pin.getFrameVelocity(self.pin_model, self.pin_data, self.pin_model.getFrameId("base_Link"), pin.LOCAL).linear
         vel_world = R_body_to_world @ vel_body
-        vel_measured = vel_world
 
         # Predict based on accelerations
         acc_world = R_body_to_world @ acc_body
@@ -61,20 +68,24 @@ class Tron1PointfootBridge(Lcm2MujocoBridge):
         # if self.low_cmd.contact[0] == 1: # right foot contact
         if self.low_state.foot_force[0] > 0: # right foot contact
             foot_pos_world = self.pin_data.oMf[self.pin_model.getFrameId("foot_R_Link")].translation
-            height_measured = (pos_world - foot_pos_world)[-1]
+            height_measured = (pos_world - foot_pos_world)[-1] + self.foot_radius
+            vel_measured = vel_world
             se_state = self.KF.correct(np.append(height_measured, vel_measured))
 
         # if self.low_cmd.contact[1] == 1: # left foot contact
         if self.low_state.foot_force[1] > 0: # left foot contact
             foot_pos_world = self.pin_data.oMf[self.pin_model.getFrameId("foot_L_Link")].translation
-            height_measured = (pos_world - foot_pos_world)[-1]
+            height_measured = (pos_world - foot_pos_world)[-1] + self.foot_radius
+            vel_measured = vel_world
             se_state = self.KF.correct(np.append(height_measured, vel_measured))
 
         # print(f"GT: {self.low_state.position[2]}\t EST {se_state[2]}")
         self.vis_pos_est = se_state[:3]
         self.vis_R_body = R_body_to_world
-        # self.low_state.position[2] = se_state[2]
-        # self.low_state.velocity[:] = se_state[3:]
+
+        # Write estimated states into low_state
+        self.low_state.position[2] = se_state[2]
+        self.low_state.velocity[:] = se_state[3:]
 
         if self.low_cmd.reset_se:
             self.KF.reset(np.array([0, 0, height_measured, *vel_measured]))
@@ -83,8 +94,8 @@ class Tron1PointfootBridge(Lcm2MujocoBridge):
         # Parse common robot states to low_state first
         # Required fields: position, quaternion, velocity, omega, qj_pos, qj_vel
         if backend == "pinocchio":
-            self.update_kinematics_and_dynamics_pinocchio()
             self.update_state_estimation()
+            self.update_kinematics_and_dynamics_pinocchio()
         else:
             self.update_kinematics_and_dynamics_mujoco()
 
@@ -156,6 +167,10 @@ class Tron1PointfootBridge(Lcm2MujocoBridge):
     def update_kinematics_and_dynamics_pinocchio(self):
         # Pinocchio computations
         # np.set_printoptions(precision=4, suppress=True, linewidth=1000)
+
+        # Overwrite position to (0, 0, pz)
+        self.low_state.position[0] = 0
+        self.low_state.position[1] = 0
 
         #* dq = [v_world, omega_body, qj_vel] in Mujoco conventions
         dq = np.concatenate((self.low_state.velocity, self.low_state.omega, self.low_state.qj_vel), axis=0)
