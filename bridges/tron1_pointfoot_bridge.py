@@ -25,12 +25,15 @@ class Tron1PointfootBridge(Lcm2MujocoBridge):
         self.pin_data = self.pin_model.createData()
 
         # State estimator
-        height_init = 0.8
+        height_init = 0.85
         # Process noise (px, py, pz, vx, vy, vz)
-        KF_Q = np.diag([0.002, 0.002, 0.002, 0.02, 0.02, 0.02]) * 1e-3
+        KF_Q = np.diag([0.002, 0.002, 0.002, 0.02, 0.02, 0.02])
         # Measurement noise (pz, vx, vy, vz)
         KF_R = np.diag([0.001, 0.1, 0.1, 0.1])
         self.KF = FloatingBaseLinearStateEstimator(self.config.dt_sim, KF_Q, KF_R, height_init)
+        self.low_state.position = [0, 0, height_init]
+        self.low_state.quaternion = [1, 0, 0, 0] # wxyz
+        self.low_cmd.contact = [True, True]
 
         # Visualization
         self.vis_se = True # override default flag
@@ -39,30 +42,39 @@ class Tron1PointfootBridge(Lcm2MujocoBridge):
         self.vis_box_size = [0.1, 0.1, 0.08]
 
     def update_state_estimation(self):
+        # Retrive states from IMU readings
+        omega_body = self.low_state.omega
+        acc_body = self.low_state.acceleration
+
+        # Retrive states from Pinocchio data
         R_body_to_world = self.pin_data.oMf[self.pin_model.getFrameId("base_Link")].rotation
         pos_world = self.pin_data.oMf[self.pin_model.getFrameId("base_Link")].translation
-        acc_body = self.low_state.acceleration
-        omega_body = self.low_state.omega
-        se_state = self.KF.predict(R_body_to_world @ acc_body)
-        pin_v = np.concatenate((R_body_to_world.T @ self.low_state.velocity, omega_body, self.low_state.qj_vel), axis=0)
+        vel_body = pin.getFrameVelocity(self.pin_model, self.pin_data, self.pin_model.getFrameId("base_Link"), pin.LOCAL).linear
+        vel_world = R_body_to_world @ vel_body
+        vel_measured = vel_world
 
-        if self.low_cmd.contact[0] == 1: # right foot contact
+        # Predict based on accelerations
+        acc_world = R_body_to_world @ acc_body
+        se_state = self.KF.predict(acc_world + np.array([0, 0, -9.81]))
+
+        # Correct based on foot contact
+        # if self.low_cmd.contact[0] == 1: # right foot contact
+        if self.low_state.foot_force[0] > 0: # right foot contact
             foot_pos_world = self.pin_data.oMf[self.pin_model.getFrameId("foot_R_Link")].translation
-            foot_vel_world = self.low_state.J_gc[:3] @ pin_v
-            vel_measured = -(np.cross(omega_body, foot_pos_world) + foot_vel_world)
             height_measured = (pos_world - foot_pos_world)[-1]
             se_state = self.KF.correct(np.append(height_measured, vel_measured))
 
-        if self.low_cmd.contact[1] == 1: # left foot contact
+        # if self.low_cmd.contact[1] == 1: # left foot contact
+        if self.low_state.foot_force[1] > 0: # left foot contact
             foot_pos_world = self.pin_data.oMf[self.pin_model.getFrameId("foot_L_Link")].translation
-            foot_vel_world = self.low_state.J_gc[3:] @ pin_v
-            vel_measured = -(np.cross(omega_body, foot_pos_world) + foot_vel_world)
             height_measured = (pos_world - foot_pos_world)[-1]
             se_state = self.KF.correct(np.append(height_measured, vel_measured))
 
         # print(f"GT: {self.low_state.position[2]}\t EST {se_state[2]}")
         self.vis_pos_est = se_state[:3]
         self.vis_R_body = R_body_to_world
+        # self.low_state.position[2] = se_state[2]
+        # self.low_state.velocity[:] = se_state[3:]
 
         if self.low_cmd.reset_se:
             self.KF.reset(np.array([0, 0, height_measured, *vel_measured]))
