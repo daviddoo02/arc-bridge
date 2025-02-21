@@ -81,9 +81,9 @@ class Lcm2MujocoBridge:
         self.lcm_handle_thread.join()
         print("LCM thread exited")
 
-    def register_low_state_subscriber(self, topic=None):
-        if topic:
-            assert(topic == "HOPPER_STATE")
+    def register_low_state_subscriber(self):
+        if self.config.robot_type == "hopper":
+            # TODO make this more general
             self.low_state_suber = self.lc.subscribe("HOPPER_STATE", self.lowStateHandler)
         else:
             self.low_state_suber = self.lc.subscribe(self.topic_state, self.lowStateHandler)
@@ -107,14 +107,32 @@ class Lcm2MujocoBridge:
             return
         msg = eval(self.topic_state+"_t").decode(data)
         #! The following is used for hopper only
-        self.mj_data.qpos[0] = msg.position[0]
-        self.mj_data.qpos[1] = msg.position[2]-0.47 # offsetted z joint height in xml
-        self.mj_data.qpos[2] = msg.rpy[1]
-        self.mj_data.qpos[3:5] = msg.qj_pos
-        self.mj_data.qvel[:] = 0
+        # self.mj_data.qpos[0] = msg.position[0]
+        # self.mj_data.qpos[1] = msg.position[2]-0.47 # offsetted z joint height in xml
+        # self.mj_data.qpos[2] = msg.rpy[1]
+        # self.mj_data.qpos[3:5] = msg.qj_pos
+        # self.mj_data.qvel[:] = 0
         # self.mj_data.act[:] = False
         # self.mj_data.qacc_warmstart[:] = 0
         # self.mj_data.ctrl[:] = 0
+        #! The following is used for tron1 only
+        self.mj_data.qpos[0] = msg.position[0]
+        self.mj_data.qpos[1] = msg.position[1]
+        self.mj_data.qpos[2] = self.low_state.position[2]
+        self.mj_data.qpos[3] = msg.quaternion[0]
+        self.mj_data.qpos[4] = msg.quaternion[1]
+        self.mj_data.qpos[5] = msg.quaternion[2]
+        self.mj_data.qpos[6] = msg.quaternion[3]
+        self.mj_data.qpos[7:7+6] = msg.qj_pos
+        self.mj_data.qvel[:] = 0
+        # Partially update low_state
+        self.low_state.qj_pos = msg.qj_pos
+        self.low_state.qj_vel = msg.qj_vel
+        self.low_state.qj_tau = msg.qj_tau
+        self.low_state.acceleration = msg.acceleration
+        self.low_state.omega = msg.omega
+        self.low_state.quaternion = msg.quaternion
+        self.low_state.rpy = msg.rpy
 
     def update_motor_cmd(self):
         for i in range(self.num_motor):
@@ -177,6 +195,13 @@ class Lcm2MujocoBridge:
         # Encode and publish robot states
         self.low_state.timestamp = time.time_ns()
         self.lc.publish(self.topic_state, self.low_state.encode())
+
+    def forward_processed_low_state(self, topic_to_publish=None):
+        # Process robot kinematics and dynamics based on received common states
+        self.parse_robot_specific_low_state()
+        # Encode and publish robot states
+        self.low_state.timestamp = time.time_ns()
+        self.lc.publish(topic_to_publish, self.low_state.encode())
 
     @abstractmethod
     def parse_robot_specific_low_state(self):

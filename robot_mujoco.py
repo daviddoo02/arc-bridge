@@ -24,6 +24,10 @@ def SimulationThread():
                 bridge.publish_low_state()
                 bridge.update_motor_cmd()
                 bridge.low_cmd_received = False
+            else:
+                # Publish to a different topic to handle replay mode
+                # TODO make this more general
+                bridge.forward_processed_low_state("TRON1_STATE")
 
         time_until_next_step = mj_model.opt.timestep - (time.perf_counter() - step_start)
         if time_until_next_step > 0:
@@ -105,7 +109,7 @@ if __name__ == "__main__":
         bridge = Lcm2MujocoBridge(mj_model, mj_data, robot_config)
 
     if args.replay:
-        bridge.register_low_state_subscriber("HOPPER_STATE") # Capitalized for hardware topic name
+        bridge.register_low_state_subscriber()
     else:
         bridge.register_low_cmd_subscriber()
 
