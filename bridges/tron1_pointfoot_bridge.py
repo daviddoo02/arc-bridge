@@ -4,6 +4,7 @@ import pinocchio as pin
 
 from state_estimators import FloatingBaseLinearStateEstimator
 from .lcm2mujuco_bridge import Lcm2MujocoBridge
+from lcm_types.robot_lcm import tron1_pointfoot_state_t, tron1_pointfoot_control_t
 from utils import *
 
 class Tron1PointfootBridge(Lcm2MujocoBridge):
@@ -290,3 +291,26 @@ class Tron1PointfootBridge(Lcm2MujocoBridge):
         p_gc = np.concatenate((right_foot_pos, left_foot_pos), axis=0)
         # assert(np.allclose(self.low_state.p_gc, p_gc, atol=1e-5))
         self.low_state.p_gc = p_gc.tolist()
+
+    def lowStateHandler(self, channel, data):
+        if self.mj_data == None:
+            return
+
+        msg = eval(self.topic_state+"_t").decode(data)
+        self.mj_data.qpos[0] = msg.position[0]
+        self.mj_data.qpos[1] = msg.position[1]
+        self.mj_data.qpos[2] = self.low_state.position[2]
+        self.mj_data.qpos[3] = msg.quaternion[0]
+        self.mj_data.qpos[4] = msg.quaternion[1]
+        self.mj_data.qpos[5] = msg.quaternion[2]
+        self.mj_data.qpos[6] = msg.quaternion[3]
+        self.mj_data.qpos[7:7+6] = msg.qj_pos
+        self.mj_data.qvel[:] = 0
+        # Partially update low_state
+        self.low_state.qj_pos = msg.qj_pos
+        self.low_state.qj_vel = msg.qj_vel
+        self.low_state.qj_tau = msg.qj_tau
+        self.low_state.acceleration = msg.acceleration
+        self.low_state.omega = msg.omega
+        self.low_state.quaternion = msg.quaternion
+        self.low_state.rpy = msg.rpy

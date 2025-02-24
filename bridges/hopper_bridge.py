@@ -3,6 +3,7 @@ import time
 
 from .lcm2mujuco_bridge import Lcm2MujocoBridge
 from state_estimators import HopperStateEstimator
+from lcm_types.robot_lcm import hopper_state_t, hopper_control_t
 from utils import *
 
 class HopperBridge(Lcm2MujocoBridge):
@@ -73,3 +74,17 @@ class HopperBridge(Lcm2MujocoBridge):
         # Handle reset request
         if self.low_cmd.reset_se:
             self.state_estimator.reset(np.array([0, 0, height_measured, *vel_measured]))
+
+    def lowStateHandler(self, channel, data):
+        if self.mj_data == None:
+            return
+
+        msg = eval(self.topic_state+"_t").decode(data)
+        self.mj_data.qpos[0] = msg.position[0]
+        self.mj_data.qpos[1] = msg.position[2]-0.47 # offsetted z joint height in xml
+        self.mj_data.qpos[2] = msg.rpy[1]
+        self.mj_data.qpos[3:5] = msg.qj_pos
+        self.mj_data.qvel[:] = 0
+        self.mj_data.act[:] = False
+        self.mj_data.qacc_warmstart[:] = 0
+        self.mj_data.ctrl[:] = 0

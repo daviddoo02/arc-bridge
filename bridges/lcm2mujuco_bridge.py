@@ -102,37 +102,9 @@ class Lcm2MujocoBridge:
             self.low_cmd = eval(self.topic_cmd+"_t").decode(data)
             self.low_cmd_received = True
 
+    @abstractmethod
     def lowStateHandler(self, channel, data):
-        if self.mj_data == None:
-            return
-        msg = eval(self.topic_state+"_t").decode(data)
-        #! The following is used for hopper only
-        # self.mj_data.qpos[0] = msg.position[0]
-        # self.mj_data.qpos[1] = msg.position[2]-0.47 # offsetted z joint height in xml
-        # self.mj_data.qpos[2] = msg.rpy[1]
-        # self.mj_data.qpos[3:5] = msg.qj_pos
-        # self.mj_data.qvel[:] = 0
-        # self.mj_data.act[:] = False
-        # self.mj_data.qacc_warmstart[:] = 0
-        # self.mj_data.ctrl[:] = 0
-        #! The following is used for tron1 only
-        self.mj_data.qpos[0] = msg.position[0]
-        self.mj_data.qpos[1] = msg.position[1]
-        self.mj_data.qpos[2] = self.low_state.position[2]
-        self.mj_data.qpos[3] = msg.quaternion[0]
-        self.mj_data.qpos[4] = msg.quaternion[1]
-        self.mj_data.qpos[5] = msg.quaternion[2]
-        self.mj_data.qpos[6] = msg.quaternion[3]
-        self.mj_data.qpos[7:7+6] = msg.qj_pos
-        self.mj_data.qvel[:] = 0
-        # Partially update low_state
-        self.low_state.qj_pos = msg.qj_pos
-        self.low_state.qj_vel = msg.qj_vel
-        self.low_state.qj_tau = msg.qj_tau
-        self.low_state.acceleration = msg.acceleration
-        self.low_state.omega = msg.omega
-        self.low_state.quaternion = msg.quaternion
-        self.low_state.rpy = msg.rpy
+        raise NotImplementedError("Subclass must implement this for replay mode")
 
     def update_motor_cmd(self):
         for i in range(self.num_motor):
