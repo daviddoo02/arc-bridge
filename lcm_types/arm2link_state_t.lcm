@@ -22,4 +22,8 @@ struct arm2link_state_t
 
     // p_joint
     double   p_joint[num_joint][3];
+
+    // Sensor data
+    double   base_ft_data[6];
+    double   qj_tau_3dim[6];
 }

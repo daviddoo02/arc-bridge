@@ -121,8 +121,8 @@
     <jointactuatorfrc name="joint_2_torque" joint="joint_2" />
 
     <!-- Using torque with torque sensors -->
-    <!-- <torque name="joint_1_torque" site="torque_sensor1"/>
-    <torque name="joint_2_torque" site="torque_sensor2"/> -->
+    <torque name="joint_1_torque_3dim" site="torque_sensor1"/>
+    <torque name="joint_2_torque_3dim" site="torque_sensor2"/>
 
     <!-- Add base F/T sensor with torque and force -->
     <force name="base_force" site="ft_site"/>

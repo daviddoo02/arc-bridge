@@ -41,7 +41,7 @@ class Arm2linkBridge(Lcm2MujocoBridge):
         self.low_state.p_gc = p_gc.tolist()
 
         joint_1_id = mujoco.mj_name2id(self.mj_model, mujoco._enums.mjtObj.mjOBJ_BODY, "link_1")
-        joint_2_id = mujoco.mj_name2id(self.mj_model, mujoco._enums.mjtObj.mjOBJ_BODY, "link2")
+        joint_2_id = mujoco.mj_name2id(self.mj_model, mujoco._enums.mjtObj.mjOBJ_BODY, "link_2")
 
         p_joint_1 = self.mj_data.xpos[joint_1_id]
         p_joint_2 = self.mj_data.xpos[joint_2_id]
@@ -49,4 +49,14 @@ class Arm2linkBridge(Lcm2MujocoBridge):
         p_joint = np.concatenate((p_joint_1[None, :], p_joint_2[None, :]), axis=0)
         self.low_state.p_joint = p_joint.tolist()
 
+        self.low_state.base_ft_data[:3] = self.mj_data.sensordata[12:15].tolist()
+        self.low_state.base_ft_data[3:] = self.mj_data.sensordata[15:18].tolist()
+        self.low_state.qj_tau_3dim[:3] = self.mj_data.sensordata[6:9].tolist()
+        self.low_state.qj_tau_3dim[3:] = self.mj_data.sensordata[9:12].tolist()
+
+    def update_motor_cmd(self):
+        super().update_motor_cmd()
+        for idx in range(self.low_cmd.num_ext_actuator):
+            ext_act_idx = idx + self.num_motor
+            self.mj_data.ctrl[ext_act_idx] = self.low_cmd.ext_actuation[idx]
 
