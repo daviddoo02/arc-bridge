@@ -45,11 +45,6 @@
         <!-- Add joint 1 torque sensor site -->
         <site name="torque_sensor1" pos="0 0 0"/>
 
-        <!-- Sites along link 1 at 25%, 50%, 75% -->
-        <site name="link1_25" pos="0 0 0.25"/>
-        <site name="link1_50" pos="0 0 0.5"/>
-        <site name="link1_75" pos="0 0 0.75"/>
-
         <body name="link_2" pos="0 0 1">
           <joint name="joint_2" axis="0 -1 0"/>
           <geom type="cylinder" size="0.05" fromto="0 0 0 0 0 1" rgba="1 1 0 1" class="collision" />
@@ -57,11 +52,6 @@
 
           <!-- Add joint 2 torque sensor site -->
           <site name="torque_sensor2" pos="0 0 0"/>
-
-          <!-- Sites along link 2 at 25%, 50%, 75% -->
-          <site name="link2_25" pos="0 0 0.25"/>
-          <site name="link2_50" pos="0 0 0.5"/>
-          <site name="link2_75" pos="0 0 0.75"/>
 
           <body name="end_effector" pos="0 0 1">
             <geom type="sphere" size="0.05" rgba="1 0 0 1" priority="1" condim="6" friction="1.0 0.02 0.01" class="collision"/>
@@ -75,38 +65,6 @@
     <!-- Motors -->
     <motor name="joint_1_motor" joint="joint_1" class="arm"/>
     <motor name="joint_2_motor" joint="joint_2" class="arm"/>
-
-    <!-- Link 1 force actuators -->
-    <general name="l1_25_fx" site="link1_25" gaintype="fixed" biastype="none" gainprm="1" 
-             gear="1 0 0 0 0 0"/>  <!-- X direction force -->
-    <general name="l1_25_fz" site="link1_25" gaintype="fixed" biastype="none" gainprm="1" 
-             gear="0 0 1 0 0 0"/>  <!-- Z direction force -->
-    
-    <general name="l1_50_fx" site="link1_50" gaintype="fixed" biastype="none" gainprm="1" 
-             gear="1 0 0 0 0 0"/>
-    <general name="l1_50_fz" site="link1_50" gaintype="fixed" biastype="none" gainprm="1" 
-             gear="0 0 1 0 0 0"/>
-    
-    <general name="l1_75_fx" site="link1_75" gaintype="fixed" biastype="none" gainprm="1" 
-             gear="1 0 0 0 0 0"/>
-    <general name="l1_75_fz" site="link1_75" gaintype="fixed" biastype="none" gainprm="1" 
-             gear="0 0 1 0 0 0"/>
-    
-    <!-- Link 2 force actuators -->
-    <general name="l2_25_fx" site="link2_25" gaintype="fixed" biastype="none" gainprm="1" 
-             gear="1 0 0 0 0 0"/>
-    <general name="l2_25_fz" site="link2_25" gaintype="fixed" biastype="none" gainprm="1" 
-             gear="0 0 1 0 0 0"/>
-    
-    <general name="l2_50_fx" site="link2_50" gaintype="fixed" biastype="none" gainprm="1" 
-             gear="1 0 0 0 0 0"/>
-    <general name="l2_50_fz" site="link2_50" gaintype="fixed" biastype="none" gainprm="1" 
-             gear="0 0 1 0 0 0"/>
-    
-    <general name="l2_75_fx" site="link2_75" gaintype="fixed" biastype="none" gainprm="1" 
-             gear="1 0 0 0 0 0"/>
-    <general name="l2_75_fz" site="link2_75" gaintype="fixed" biastype="none" gainprm="1" 
-             gear="0 0 1 0 0 0"/>
   </actuator>
 
   <sensor>

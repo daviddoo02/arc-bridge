@@ -6,7 +6,7 @@ from utils import *
 
 class Arm2linkBridge(Lcm2MujocoBridge):
     def __init__(self, mj_model, mj_data, config):
-        super().__init__(mj_model, mj_data, config, num_motor=2)
+        super().__init__(mj_model, mj_data, config)
 
     def parse_robot_specific_low_state(self):
 
@@ -55,8 +55,26 @@ class Arm2linkBridge(Lcm2MujocoBridge):
         self.low_state.qj_tau_3dim[3:] = self.mj_data.sensordata[9:12].tolist()
 
     def update_motor_cmd(self):
+        # Update motor torques
         super().update_motor_cmd()
-        for idx in range(self.low_cmd.num_ext_actuator):
-            ext_act_idx = idx + self.num_motor
-            self.mj_data.ctrl[ext_act_idx] = self.low_cmd.ext_actuation[idx]
-
+        # Parse required external wrench and location
+        ext_force_cartesian = self.low_cmd.ext_force[:3]
+        ext_torque_cartesian = np.zeros(3)
+        ee_id = mujoco.mj_name2id(self.mj_model, mujoco._enums.mjtObj.mjOBJ_BODY, "end_effector")
+        link_2_id = mujoco.mj_name2id(self.mj_model, mujoco._enums.mjtObj.mjOBJ_BODY, "link_2")
+        ee_pos = self.mj_data.xpos[ee_id]
+        joint_2_pos = self.mj_data.xpos[link_2_id]
+        vec_j2_to_ee = ee_pos - joint_2_pos
+        # Parse ext_alpha to a point on link_2
+        ext_point = joint_2_pos + vec_j2_to_ee * self.low_cmd.ext_alpha
+        # Reset qfrc_applied to zero
+        self.mj_data.qfrc_applied[:] = 0
+        # Apply a Cartesian force and torque as generalized force to a point (world frame) on link2
+        mujoco.mj_applyFT(self.mj_model, self.mj_data,
+                          ext_force_cartesian, ext_torque_cartesian,
+                          ext_point, link_2_id, self.mj_data.qfrc_applied)
+        # print("====================================")
+        # print(f"ext_force_cartesian: {ext_force_cartesian}")
+        # print(f"ext_torque_cartesian: {ext_torque_cartesian}")
+        # print(f"ext_point: {ext_point}")
+        # print(f"qfrc_applied, {self.mj_data.qfrc_applied}")

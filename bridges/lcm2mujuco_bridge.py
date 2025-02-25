@@ -14,7 +14,7 @@ MOTOR_SENSOR_NUM = 3 # pos, vel, torque
 
 class Lcm2MujocoBridge:
 
-    def __init__(self, mj_model, mj_data, config, num_motor=None):
+    def __init__(self, mj_model, mj_data, config):
         self.mj_model = mj_model
         self.mj_data = mj_data
 
@@ -22,7 +22,7 @@ class Lcm2MujocoBridge:
         self.topic_cmd = config.robot_cmd_topic
         self.config = config
 
-        self.num_motor = self.mj_model.nu if num_motor is None else num_motor
+        self.num_motor = self.mj_model.nu
         self.num_body_state = self.mj_model.nq - self.num_motor
         self.num_joint_state = self.num_motor
         self.dim_motor_sensor = MOTOR_SENSOR_NUM * self.num_motor

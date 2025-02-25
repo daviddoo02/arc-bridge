@@ -14,6 +14,6 @@ struct arm2link_control_t
     double   kp[num_joint];
     double   kd[num_joint];
 
-    int32_t  num_ext_actuator;
-    double   ext_actuation[num_ext_actuator];
+    double   ext_force[3];
+    double   ext_alpha;
 }
