@@ -33,9 +33,10 @@
     <body name="base_link" pos="0 0 0.1" childclass="arm">
       <geom type="cylinder" size="0.2 0.1" pos="0 0 0" class="visual" />
       <geom type="cylinder" size="0.05" fromto="0 0 0.1 0 0 0.2" rgba="0 0 1 1" class="visual" />
+      <inertial pos="0 0 0" mass="0" diaginertia="0 0 0" />
 
       <!-- Add base F/T sensor site -->
-      <site name="ft_site" pos="0 0 0"/>
+      <site name="ft_site" pos="0 0 0.2"/>
 
       <body name="link_1" pos="0 0 0.2" euler="0 1.57 0">
         <joint name="joint_1" axis="0 -1 0"/>
