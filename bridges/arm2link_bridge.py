@@ -57,24 +57,19 @@ class Arm2linkBridge(Lcm2MujocoBridge):
     def update_motor_cmd(self):
         # Update motor torques
         super().update_motor_cmd()
-        # Parse required external wrench and location
-        ext_force_cartesian = self.low_cmd.ext_force[:3]
-        ext_torque_cartesian = np.zeros(3)
+        # Parse required external force and location
+        ext_force_cartesian = self.low_cmd.ext_force
+        # Get end-effector and joint 2 positions in world frame
         ee_id = mujoco.mj_name2id(self.mj_model, mujoco._enums.mjtObj.mjOBJ_BODY, "end_effector")
         link_2_id = mujoco.mj_name2id(self.mj_model, mujoco._enums.mjtObj.mjOBJ_BODY, "link_2")
         ee_pos = self.mj_data.xpos[ee_id]
         joint_2_pos = self.mj_data.xpos[link_2_id]
-        vec_j2_to_ee = ee_pos - joint_2_pos
-        # Parse ext_alpha to a point on link_2
-        ext_point = joint_2_pos + vec_j2_to_ee * self.low_cmd.ext_alpha
-        # Reset qfrc_applied to zero
-        self.mj_data.qfrc_applied[:] = 0
-        # Apply a Cartesian force and torque as generalized force to a point (world frame) on link2
-        mujoco.mj_applyFT(self.mj_model, self.mj_data,
-                          ext_force_cartesian, ext_torque_cartesian,
-                          ext_point, link_2_id, self.mj_data.qfrc_applied)
+        # Compute the equivalent force and torque in cartesian at end-effector
+        p_ee_to_j2 = joint_2_pos - ee_pos
+        p_ee_to_ext_point = p_ee_to_j2 * (1 - self.low_cmd.ext_alpha)
+        ext_torque_cartesian = np.cross(p_ee_to_ext_point, ext_force_cartesian)
+        # Apply the force and torque to end-effector
+        self.mj_data.xfrc_applied[ee_id] = np.concatenate((ext_force_cartesian, ext_torque_cartesian))
         # print("====================================")
         # print(f"ext_force_cartesian: {ext_force_cartesian}")
         # print(f"ext_torque_cartesian: {ext_torque_cartesian}")
-        # print(f"ext_point: {ext_point}")
-        # print(f"qfrc_applied, {self.mj_data.qfrc_applied}")
