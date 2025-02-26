@@ -169,3 +169,7 @@ lcmlog*
 *.mp4
 *.mat
 logs/
+lcm_types/*.py
+.vscode/
+.DS_Store
+.idea/
