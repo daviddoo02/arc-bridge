@@ -70,3 +70,20 @@ def quat_wxyz_to_xyzw(q):
     Convert a quaternion from (w, x, y, z) to (x, y, z, w) format.
     """
     return np.array([q[1], q[2], q[3], q[0]])
+
+def rot_coord(axis:str, theta:float) -> np.ndarray:
+    """
+    Compute rotation matrix for coordinate transformation. Note that
+    coordinateRotation(CoordinateAxis:X, .1) * v will rotate v by 1 radians.
+    """
+    s = np.sin(float(theta))
+    c = np.cos(float(theta))
+    R:np.ndarray = None
+    if axis == "x":
+        R = np.array([1, 0, 0, 0, c, s, 0, -s, c], dtype=DTYPE).reshape((3,3))
+    elif axis == "y":
+        R = np.array([c, 0, -s, 0, 1, 0, s, 0, c], dtype=DTYPE).reshape((3,3))
+    elif axis == "z":
+        R = np.array([c, s, 0, -s, c, 0, 0, 0, 1], dtype=DTYPE).reshape((3,3))
+
+    return R.T
