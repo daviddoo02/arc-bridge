@@ -51,12 +51,11 @@ class Tron1PointfootBridge(Lcm2MujocoBridge):
         # Retrive states from Pinocchio data
         R_body_to_world = self.pin_data.oMf[self.pin_model.getFrameId("base_Link")].rotation
         pos_world = self.pin_data.oMf[self.pin_model.getFrameId("base_Link")].translation
-        vel_body = pin.getFrameVelocity(self.pin_model, self.pin_data, self.pin_model.getFrameId("base_Link"), pin.LOCAL).linear
-        vel_world = R_body_to_world @ vel_body
-        # TODO this could still be wrong
-        vel_measured = vel_world
-        height_measured = pos_world[-1]
-
+        vel_aligned = pin.getFrameVelocity(self.pin_model, 
+                                        self.pin_data, 
+                                        self.pin_model.getFrameId("base_Link"), 
+                                        pin.LOCAL_WORLD_ALIGNED).linear
+        #* torso twist linear in pin.LOCAL_WORLD_ALIGNED is the same as v_world!!!
         # Predict based on accelerations
         acc_world = R_body_to_world @ acc_body
         se_state = self.KF.predict(acc_world + np.array([0, 0, -9.81]))
@@ -65,12 +64,22 @@ class Tron1PointfootBridge(Lcm2MujocoBridge):
         if self.low_cmd.contact[0] == 1: # right foot contact
         # if self.low_state.foot_force[0] > 0: # right foot contact
             foot_pos_world = self.pin_data.oMf[self.pin_model.getFrameId("foot_R_Link")].translation
+            foot_vel_aligned = pin.getFrameVelocity(self.pin_model, 
+                                                  self.pin_data, 
+                                                  self.pin_model.getFrameId("foot_R_Link"), 
+                                                  pin.LOCAL_WORLD_ALIGNED).linear
+            vel_measured = vel_aligned# - foot_vel_aligned
             height_measured = (pos_world - foot_pos_world)[-1] + self.foot_radius
             se_state = self.KF.correct(np.append(height_measured, vel_measured))
 
         if self.low_cmd.contact[1] == 1: # left foot contact
         # if self.low_state.foot_force[1] > 0: # left foot contact
             foot_pos_world = self.pin_data.oMf[self.pin_model.getFrameId("foot_L_Link")].translation
+            foot_vel_aligned = pin.getFrameVelocity(self.pin_model,
+                                                    self.pin_data,
+                                                    self.pin_model.getFrameId("foot_L_Link"),
+                                                    pin.LOCAL_WORLD_ALIGNED).linear
+            vel_measured = vel_aligned# - foot_vel_aligned
             height_measured = (pos_world - foot_pos_world)[-1] + self.foot_radius
             se_state = self.KF.correct(np.append(height_measured, vel_measured))
 

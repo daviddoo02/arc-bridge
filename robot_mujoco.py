@@ -87,7 +87,7 @@ if __name__ == "__main__":
         # Disable gravity and all constraints (e.g. contact, friction ...)
         mj_model.opt.disableflags = mujoco.mjtDisableBit.mjDSBL_CONSTRAINT | mujoco.mjtDisableBit.mjDSBL_GRAVITY
     elif args.debug:
-        mj_model.opt.disableflags = mujoco.mjtDisableBit.mjDSBL_GRAVITY
+        mj_model.opt.disableflags = mujoco.mjtDisableBit.mjDSBL_CONSTRAINT | mujoco.mjtDisableBit.mjDSBL_GRAVITY
 
     viewer = mujoco.viewer.launch_passive(mj_model, mj_data)
     if args.track:
