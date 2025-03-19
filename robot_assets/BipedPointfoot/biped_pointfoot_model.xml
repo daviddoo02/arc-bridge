@@ -131,8 +131,8 @@
     <framepos name="frame_pos" objtype="site" objname="imu" />
     <framelinvel name="frame_vel" objtype="site" objname="imu" />
 
-    <!-- <touch name="right_foot_force" site="right_foot" />
-    <touch name="left_foot_force" site="left_foot" /> -->
+    <touch name="right_foot_force" site="right_foot" />
+    <touch name="left_foot_force" site="left_foot" />
   </sensor>
 
 </mujoco>
