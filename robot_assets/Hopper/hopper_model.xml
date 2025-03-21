@@ -34,7 +34,7 @@
       <joint name="pitch_joint" type="hinge" axis="0 1 0"/>
 
       <body name="Torso" childclass="hopper"/>
-      <geom type="mesh" mesh="Torso" material="metal" class="visual" />
+      <geom type="mesh" mesh="torso_mesh" material="metal" class="visual" />
       <geom size="0.25 0.0115 0.0115" pos="0 -0.012 0.06" quat="1 0 0 0" type="box" class="collision" />
       <inertial 
         pos="0.00012619 0.0021568 0.039743" 
@@ -46,7 +46,7 @@
       
       <body name="Thigh" pos="0 -0.026 0">
         <joint name="thigh_joint" class="hip" axis="0 1 0"/>
-        <geom type="mesh" mesh="Thigh" material="metal" class="visual"/>
+        <geom type="mesh" mesh="thigh_mesh" material="metal" class="visual"/>
         <geom size="0.025 0.015 0.09" pos="-0.01 0.015 -0.07" quat="1 0 0 0" type="box" class="collision" />
         <inertial pos="0.0010373 -0.0083556 -0.029921" quat="0.704019 0.0129996 0.00933427 0.710001" mass="0.41602" diaginertia="0.00119604 0.00104212 0.000210614"/>
 
@@ -57,12 +57,12 @@
         
         <body name="Shank" pos="0 0.013 -0.22">
           <joint name="calf_joint" class="knee" axis="0 1 0"/>
-          <geom type="mesh" mesh="Shank" material="metal" class="visual"/>
+          <geom type="mesh" mesh="shank_mesh" material="metal" class="visual"/>
           <geom size="0.015 0.01 0.11" pos="0 0 -0.07" quat="1 0 0 0" type="box" class="collision" />
           <inertial pos="-0.000239033 0.000233479 -0.0752972" quat="0.706961 -0.00204689 -0.00156268 0.707248" mass="0.116643" diaginertia="0.000594634 0.000591483 5.24161e-06"/>
           
           <body name="Foot" pos="0 0 -0.20193" quat="0.707105 0 0 -0.707108">
-            <geom type="mesh" mesh="Foot" material="metal" class="visual"/>
+            <geom type="mesh" mesh="foot_mesh" material="metal" class="visual"/>
             <geom size="0.015" pos="0 0 0" priority="1" condim="6"
             friction="1.0 0.02 0.01" class="collision"/>
             <inertial 
@@ -113,11 +113,11 @@
     <material name="white" rgba="1 1 1 1" />
     <material name="gray" rgba="0.671705 0.692426 0.774270 1" />
 
-    <mesh file="Torso.STL" />
-    <mesh file="Thigh.STL" />
-    <mesh file="Shank.STL" />
-    <mesh file="Foot.STL" />
-    <mesh file="Coupler.STL" />
+    <mesh file="Torso.STL" name="torso_mesh" />
+    <mesh file="Thigh.STL" name="thigh_mesh" />
+    <mesh file="Shank.STL" name="shank_mesh" />
+    <mesh file="Foot.STL" name="foot_mesh" />
+    <mesh file="Coupler.STL" name="coupler_mesh" />
   </asset>
 
 </mujoco>
