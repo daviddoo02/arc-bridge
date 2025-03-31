@@ -36,6 +36,9 @@ class KalmanFilter:
             self.x = x_init.copy()
         self.P = self.P_init.copy()
 
+    def get_state(self):
+        return self.x.copy()
+
     def predict(self, u):
         # Predict state ahead
         self.x = self.A @ self.x + self.B @ u

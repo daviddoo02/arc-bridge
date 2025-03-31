@@ -14,5 +14,5 @@ struct tron1_pointfoot_control_t
 
     boolean  reset_se;
 
-    boolean  contact[2]; // scheduled contact for each foot
+    double  contact[2]; // scheduled contact for each foot
 }

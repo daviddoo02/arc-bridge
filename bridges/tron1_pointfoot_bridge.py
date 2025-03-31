@@ -16,8 +16,9 @@ class Tron1PointfootBridge(Lcm2MujocoBridge):
         self.right_foot_link_name = "foot_R_Link" # body
         self.left_foot_name = "foot_L_collision" # geom
         self.right_foot_name = "foot_R_collision" # geom
+        self.num_legs = 2
 
-        # Override motor offsets
+        # Override motor offsets (rad)
         self.joint_offsets = np.array([0, 0.53, -0.55,  # right leg
                                        0, 0.53, -0.55]) # left leg
 
@@ -26,16 +27,16 @@ class Tron1PointfootBridge(Lcm2MujocoBridge):
         self.pin_data = self.pin_model.createData()
 
         # State estimator
-        self.height_init = 0.85
+        self.height_init = 0.8
         # Process noise (px, py, pz, vx, vy, vz)
-        KF_Q = np.diag([0.002, 0.002, 0.002, 0.02, 0.02, 0.02]) * 2e-3
+        KF_Q = np.diag([0.002, 0.002, 0.002, 0.02, 0.02, 0.02])
         # Measurement noise (pz, vx, vy, vz)
         KF_R = np.diag([0.001, 0.1, 0.1, 0.1])
         self.KF = FloatingBaseLinearStateEstimator(self.config.dt_sim, KF_Q, KF_R, self.height_init)
         self.low_state.position = [0, 0, self.height_init]
         self.low_state.quaternion = [1, 0, 0, 0] # wxyz
         self.low_cmd.contact = [True, True]
-        self.foot_radius = 0.02
+        self.foot_radius = 0.032
 
         # Visualization
         self.vis_se = True # override default flag
@@ -59,31 +60,23 @@ class Tron1PointfootBridge(Lcm2MujocoBridge):
         # Predict based on accelerations
         acc_world = R_body_to_world @ acc_body
         se_state = self.KF.predict(acc_world + np.array([0, 0, -9.81]))
+        # print(f"GT Vel: {self.mj_data.sensordata[self.dim_motor_sensor + 13:self.dim_motor_sensor + 16]}")
+        # print(f"GT Pz: {self.mj_data.sensordata[self.dim_motor_sensor + 12]}")
 
+        pf, vf = self.calculate_foot_position_and_velocity() # body frame
         # Correct based on foot contact
-        if self.low_cmd.contact[0] == 1: # right foot contact
-        # if self.low_state.foot_force[0] > 0: # right foot contact
-            foot_pos_world = self.pin_data.oMf[self.pin_model.getFrameId("foot_R_Link")].translation
-            foot_vel_aligned = pin.getFrameVelocity(self.pin_model, 
-                                                  self.pin_data, 
-                                                  self.pin_model.getFrameId("foot_R_Link"), 
-                                                  pin.LOCAL_WORLD_ALIGNED).linear
-            vel_measured = vel_aligned# - foot_vel_aligned
-            height_measured = (pos_world - foot_pos_world)[-1] + self.foot_radius
-            se_state = self.KF.correct(np.append(height_measured, vel_measured))
+        for idx in range(self.num_legs):
+            if self.low_cmd.contact[idx] > 0.2:
+            # if self.low_state.foot_force[idx] > 0:
+                foot_vel_body = vf[idx]
+                vel_measured = -R_body_to_world @ (foot_vel_body + np.cross(omega_body, pf[idx]))
+                height_measured = -(R_body_to_world @ pf[idx])[2] + self.foot_radius
+                se_state = self.KF.correct(np.append(height_measured, vel_measured))
+                # print(f"FK Vel: {vel_measured}\t 
+                # phase: {self.low_cmd.contact[idx]}\t 
+                # force: {self.low_state.foot_force[idx]}")
+                # print(f"FK Pz: {height_measured}")
 
-        if self.low_cmd.contact[1] == 1: # left foot contact
-        # if self.low_state.foot_force[1] > 0: # left foot contact
-            foot_pos_world = self.pin_data.oMf[self.pin_model.getFrameId("foot_L_Link")].translation
-            foot_vel_aligned = pin.getFrameVelocity(self.pin_model,
-                                                    self.pin_data,
-                                                    self.pin_model.getFrameId("foot_L_Link"),
-                                                    pin.LOCAL_WORLD_ALIGNED).linear
-            vel_measured = vel_aligned# - foot_vel_aligned
-            height_measured = (pos_world - foot_pos_world)[-1] + self.foot_radius
-            se_state = self.KF.correct(np.append(height_measured, vel_measured))
-
-        # print(f"GT: {self.low_state.position[2]}\t EST {se_state[2]}")
         self.vis_pos_est = se_state[:3]
         self.vis_R_body = R_body_to_world
 
@@ -102,6 +95,11 @@ class Tron1PointfootBridge(Lcm2MujocoBridge):
             # Overwrite position to (0, 0, pz)
             self.low_state.position[0] = 0
             self.low_state.position[1] = 0
+
+            # Overwrite estimated pz and velocity
+            se_state = self.KF.get_state()
+            self.low_state.position[2] = se_state[2]
+            self.low_state.velocity[:] = se_state[3:]
 
             #* q = [pos, quat(xyzw), qj_pos] in Pinocchio conventions
             pin_q = np.zeros(self.pin_model.nq)
@@ -300,6 +298,42 @@ class Tron1PointfootBridge(Lcm2MujocoBridge):
         p_gc = np.concatenate((right_foot_pos, left_foot_pos), axis=0)
         # assert(np.allclose(self.low_state.p_gc, p_gc, atol=1e-5))
         self.low_state.p_gc = p_gc.tolist()
+
+    def calculate_foot_position_and_velocity(self):
+        hip_pos_body_frame = np.array([0.05556 + 0.03, -0.105, -0.2602 + 0.072,
+                                       0.05556 + 0.03,  0.105, -0.2602 + 0.072]).reshape(2, 3)
+        l1 = 0.077
+        l2 = 0.3
+        l3 = 0.3
+
+        qj_pos_np = np.array(self.low_state.qj_pos).reshape((2, 3))
+        qj_vel_np = np.array(self.low_state.qj_vel).reshape((2, 3))
+        th1, th2, th3 = qj_pos_np[:, 0], qj_pos_np[:, 1], qj_pos_np[:, 2]
+        dth1, dth2, dth3 = qj_vel_np[:, 0], qj_vel_np[:, 1], qj_vel_np[:, 2]
+
+        p_foot = np.array([-l1 - l3*np.sin(th2 + th3) - l2*np.sin(th2),
+                           np.sin(th1)*(l3*np.cos(th2 + th3) + l2*np.cos(th2)),
+                           -np.cos(th1)*(l3*np.cos(th2 + th3) + l2*np.cos(th2))]).T
+
+        v_foot = np.array([-l2*dth2*np.cos(th2) - l3*dth2*np.cos(th2 + th3) - l3*dth3*np.cos(th2 + th3),
+                           l2*dth1*np.cos(th1)*np.cos(th2) 
+                           - l2*dth2*np.sin(th1)*np.sin(th2) 
+                           + l3*dth1*np.cos(th1)*np.cos(th2)*np.cos(th3) 
+                           - l3*dth1*np.cos(th1)*np.sin(th2)*np.sin(th3) 
+                           - l3*dth2*np.cos(th2)*np.sin(th1)*np.sin(th3) 
+                           - l3*dth2*np.cos(th3)*np.sin(th1)*np.sin(th2) 
+                           - l3*dth3*np.cos(th2)*np.sin(th1)*np.sin(th3) 
+                           - l3*dth3*np.cos(th3)*np.sin(th1)*np.sin(th2),
+                           l2*dth1*np.sin(th1)*np.cos(th2) 
+                           + l2*dth2*np.cos(th1)*np.sin(th2) 
+                           + l3*dth1*np.sin(th1)*np.cos(th2)*np.cos(th3) 
+                           + l3*dth2*np.cos(th1)*np.cos(th2)*np.sin(th3) 
+                           + l3*dth2*np.cos(th1)*np.cos(th3)*np.sin(th2) 
+                           + l3*dth3*np.cos(th1)*np.cos(th2)*np.sin(th3) 
+                           + l3*dth3*np.cos(th1)*np.cos(th3)*np.sin(th2) 
+                           - l3*dth1*np.sin(th1)*np.sin(th2)*np.sin(th3)]).T
+
+        return p_foot + hip_pos_body_frame, v_foot
 
     def lowStateHandler(self, channel, data):
         if self.mj_data == None:
