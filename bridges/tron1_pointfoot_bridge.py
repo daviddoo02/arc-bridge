@@ -41,6 +41,7 @@ class Tron1PointfootBridge(Lcm2MujocoBridge):
         # Visualization
         self.vis_se = True # override default flag
         self.vis_pos_est = np.array([0, 0, self.height_init])
+        self.vis_vel_est = np.zeros(3)
         self.vis_R_body = np.eye(3)
         self.vis_box_size = [0.1, 0.1, 0.08]
 
@@ -78,6 +79,7 @@ class Tron1PointfootBridge(Lcm2MujocoBridge):
                 # print(f"FK Pz: {height_measured}")
 
         self.vis_pos_est = se_state[:3]
+        self.vis_vel_est = se_state[3:]
         self.vis_R_body = R_body_to_world
 
         # Write estimated states into low_state

@@ -6,6 +6,8 @@ from threading import Thread
 import threading
 import argparse
 
+import numpy as np
+
 from config import Config
 from bridges import *
 
@@ -40,7 +42,7 @@ def ViewerThread():
     while viewer.is_running():
         locker.acquire()
         if not args.replay and bridge.vis_se:
-            # Add geom of estimated position and orientation
+            # Add geom of estimated position and velocity
             viewer.user_scn.ngeom = 0
             mujoco.mjv_initGeom(
                 viewer.user_scn.geoms[0],
@@ -50,7 +52,21 @@ def ViewerThread():
                 mat=bridge.vis_R_body.flatten(),
                 rgba=[1, 0, 0, 0.3]
             )
-            viewer.user_scn.ngeom = 1
+            mujoco.mjv_initGeom(
+                viewer.user_scn.geoms[1],
+                type=mujoco.mjtGeom.mjGEOM_ARROW,
+                size=np.zeros(3),
+                pos=np.zeros(3),
+                mat=np.zeros(9),
+                rgba=[0, 0, 1, 1]
+            )
+            mujoco.mjv_connector( # scn, type, width, from, to
+                viewer.user_scn.geoms[1],
+                mujoco.mjtGeom.mjGEOM_ARROW, 
+                0.02,
+                bridge.vis_pos_est, 
+                bridge.vis_pos_est + bridge.vis_vel_est*2)
+            viewer.user_scn.ngeom = 2
         viewer.sync()
         locker.release()
         time.sleep(Config.dt_viewer)
