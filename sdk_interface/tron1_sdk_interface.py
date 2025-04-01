@@ -10,8 +10,12 @@ import limxsdk.robot.RobotType as RobotType
 import limxsdk.datatypes as datatypes
 import lcm
 import numpy as np
+
+# Add the parent directory to the path
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from lcm_types.robot_lcm import tron1_pointfoot_state_t, tron1_pointfoot_control_t
 from utils import *
+
 
 JOINT_OFFSETS_HIGH = np.array([0, 0.53 - 0.06, -0.55 - 0.54,  # right leg
                                 0, 0.53 - 0.06, -0.55 - 0.54]) # left leg
