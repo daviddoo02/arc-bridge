@@ -19,8 +19,8 @@ class Tron1PointfootBridge(Lcm2MujocoBridge):
         self.num_legs = 2
 
         # Override motor offsets (rad)
-        self.joint_offsets = np.array([0, 0.53, -0.55,  # right leg
-                                       0, 0.53, -0.55]) # left leg
+        self.joint_offsets = np.array([0, 0.53 - 0.06, -0.55 - 0.54,  # right leg
+                                       0, 0.53 - 0.06, -0.55 - 0.54]) # left leg
 
         # Pinocchio model
         self.pin_model = pin.buildModelFromMJCF(self.config.robot_xml_path)
@@ -95,11 +95,6 @@ class Tron1PointfootBridge(Lcm2MujocoBridge):
             # Overwrite position to (0, 0, pz)
             self.low_state.position[0] = 0
             self.low_state.position[1] = 0
-
-            # Overwrite estimated pz and velocity
-            se_state = self.KF.get_state()
-            self.low_state.position[2] = se_state[2]
-            self.low_state.velocity[:] = se_state[3:]
 
             #* q = [pos, quat(xyzw), qj_pos] in Pinocchio conventions
             pin_q = np.zeros(self.pin_model.nq)
@@ -298,8 +293,8 @@ class Tron1PointfootBridge(Lcm2MujocoBridge):
         self.low_state.p_gc = p_gc.tolist()
 
     def calculate_foot_position_and_velocity(self):
-        hip_pos_body_frame = np.array([0.05556 + 0.03, -0.105, -0.2602 + 0.072,
-                                       0.05556 + 0.03,  0.105, -0.2602 + 0.072]).reshape(2, 3)
+        hip_pos_body_frame = np.array([0.05556 + 0.03, -0.105, -0.2602,
+                                       0.05556 + 0.03,  0.105, -0.2602]).reshape(2, 3)
         l1 = 0.077
         l2 = 0.3
         l3 = 0.3
@@ -345,13 +340,14 @@ class Tron1PointfootBridge(Lcm2MujocoBridge):
         self.mj_data.qpos[4] = msg.quaternion[1]
         self.mj_data.qpos[5] = msg.quaternion[2]
         self.mj_data.qpos[6] = msg.quaternion[3]
-        self.mj_data.qpos[7:7+6] = msg.qj_pos
+        self.mj_data.qpos[7:7+6] = msg.qj_pos # ! This one doesn't need offsets since it matchs with xml
         self.mj_data.qvel[:] = 0
+
         # Partially update low_state
-        self.low_state.qj_pos = msg.qj_pos
-        self.low_state.qj_vel = msg.qj_vel
-        self.low_state.qj_tau = msg.qj_tau
-        self.low_state.acceleration = msg.acceleration
-        self.low_state.omega = msg.omega
-        self.low_state.quaternion = msg.quaternion
-        self.low_state.rpy = msg.rpy
+        self.low_state.qj_pos[:] = (np.array(msg.qj_pos) + self.joint_offsets).tolist() # ! This one needs offsets since it should match with controller's model
+        self.low_state.qj_vel[:] = msg.qj_vel
+        self.low_state.qj_tau[:] = msg.qj_tau
+        self.low_state.acceleration[:] = msg.acceleration
+        self.low_state.omega[:] = msg.omega
+        self.low_state.quaternion[:] = msg.quaternion
+        self.low_state.rpy[:] = msg.rpy
