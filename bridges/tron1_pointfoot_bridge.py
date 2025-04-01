@@ -51,12 +51,7 @@ class Tron1PointfootBridge(Lcm2MujocoBridge):
         acc_body = self.low_state.acceleration
 
         # Retrive states from Pinocchio data
-        R_body_to_world = self.pin_data.oMf[self.pin_model.getFrameId("base_Link")].rotation
-        pos_world = self.pin_data.oMf[self.pin_model.getFrameId("base_Link")].translation
-        vel_aligned = pin.getFrameVelocity(self.pin_model, 
-                                        self.pin_data, 
-                                        self.pin_model.getFrameId("base_Link"), 
-                                        pin.LOCAL_WORLD_ALIGNED).linear
+        R_body_to_world = quat_to_rot(Quaternion(*self.low_state.quaternion))
         #* torso twist linear in pin.LOCAL_WORLD_ALIGNED is the same as v_world!!!
         # Predict based on accelerations
         acc_world = R_body_to_world @ acc_body
@@ -93,6 +88,9 @@ class Tron1PointfootBridge(Lcm2MujocoBridge):
         # Parse common robot states to low_state first
         # Required fields: position, quaternion, velocity, omega, qj_pos, qj_vel
 
+        # Update low_state.position[2] and low_state.velocity
+        self.update_state_estimation()
+
         if backend == "pinocchio":
             # Overwrite position to (0, 0, pz)
             self.low_state.position[0] = 0
@@ -119,8 +117,6 @@ class Tron1PointfootBridge(Lcm2MujocoBridge):
             pin.computeAllTerms(self.pin_model, self.pin_data, pin_q, pin_v)
             pin.updateFramePlacements(self.pin_model, self.pin_data)
 
-            # Update low_state.position[2] and low_state.velocity
-            self.update_state_estimation()
 
             # Retrive states from Pinocchio data
             self.update_kinematics_and_dynamics_pinocchio(pin_q, pin_v) # TODO change a better name
