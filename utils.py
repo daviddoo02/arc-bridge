@@ -12,7 +12,7 @@ class Quaternion:
 
     def to_numpy(self):
         """convert to an (4,1) numpy array"""
-        return np.array([self.w,self.x,self.y,self.z], dtype=DTYPE).reshape((4,1))
+        return np.array([self.w,self.x,self.y,self.z], dtype=DTYPE)
     
     def unit(self):
         """return the unit quaternion"""
@@ -64,6 +64,20 @@ def quat_to_rot(q:Quaternion) -> np.ndarray:
                   1 - 2 * (e1 * e1 + e2 * e2)], 
                   dtype=DTYPE).reshape((3,3))
     return R
+
+def rpy_to_quat(rpy)->Quaternion:
+    cy = np.cos(rpy[2] * 0.5)
+    sy = np.sin(rpy[2] * 0.5)
+    cp = np.cos(rpy[1] * 0.5)
+    sp = np.sin(rpy[1] * 0.5)
+    cr = np.cos(rpy[0] * 0.5)
+    sr = np.sin(rpy[0] * 0.5)
+    q = Quaternion()
+    q.w = cr * cp * cy + sr * sp * sy
+    q.x = sr * cp * cy - cr * sp * sy
+    q.y = cr * sp * cy + sr * cp * sy
+    q.z = cr * cp * sy - sr * sp * cy
+    return q
 
 def quat_wxyz_to_xyzw(q):
     """

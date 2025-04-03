@@ -14,6 +14,7 @@ import numpy as np
 # Add the parent directory to the path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from lcm_types.robot_lcm import tron1_pointfoot_state_t, tron1_pointfoot_control_t
+from state_estimators import MovingWindowFilter
 from utils import *
 
 
@@ -151,14 +152,24 @@ if __name__ == '__main__':
     cmd_msg.Kd = [2.0 for _ in range(motor_number)]
 
     # Wait for the robot to initialize
-    while receiver.robot_state is None:
+    while receiver.robot_state is None or receiver.imu is None:
         time.sleep(0.1)
         pass
+
+    # Compensate the initial yaw
+    quat_init = Quaternion(*receiver.imu.quat)
+    rpy_init = quat_to_rpy(quat_init)
+    yaw_init = rpy_init[2]
+    print("Initial yaw: ", yaw_init)
+
+    # TODO Compensate the initial acceleration
+    acc_init = np.array(receiver.imu.acc)
+    print("Initial acceleration: ", acc_init)
+
 
     q_init = np.array(receiver.robot_state.q)
     q_target = np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
     num_init_steps = 4000
-
     print("Enter initial pose...")
     for step in range(num_init_steps):
         alpha = step / num_init_steps
@@ -169,16 +180,9 @@ if __name__ == '__main__':
         robot.publishRobotCmd(cmd_msg)  # Publish the robot command
         rate.sleep()
 
-    # ====================================== Debug Start
-    # cmd_msg.mode[:] = [0] * 6
-    # cmd_msg.Kp[:] = [0] * 6
-    # cmd_msg.Kd[:] = [0] * 6
-    # print("Send zero torque for one leg")
-    # for i in range(100):
-    #     cmd_msg.stamp = time.time_ns()
-    #     robot.publishRobotCmd(cmd_msg)
-    #     rate.sleep()
-    # ====================================== Debug End
+
+    imu_acc_filter = MovingWindowFilter(window_size=1000, dim=3)
+    imu_gyro_filter = MovingWindowFilter(window_size=500, dim=3)
 
     print("Start to publish robot command...")
 
@@ -205,14 +209,15 @@ if __name__ == '__main__':
                 sdk_state_to_lcm_state(receiver.robot_state, low_state)
 
             if receiver.imu is not None:
-                low_state.acceleration = receiver.imu.acc
-                low_state.omega = receiver.imu.gyro
-                low_state.quaternion = receiver.imu.quat
-                quat = Quaternion(*low_state.quaternion)
+                low_state.acceleration = imu_acc_filter.calculate_average(np.array(receiver.imu.acc))
+                low_state.omega = imu_gyro_filter.calculate_average(np.array(receiver.imu.gyro))
+                quat = Quaternion(*receiver.imu.quat)
                 rpy = quat_to_rpy(quat)
                 low_state.rpy[0] = rpy[0]
                 low_state.rpy[1] = rpy[1]
-                low_state.rpy[2] = rpy[2]
+                low_state.rpy[2] = rpy[2] - yaw_init
+                low_state.quaternion = rpy_to_quat(low_state.rpy).to_numpy().tolist()
+
 
             lc.publish(topic_state, low_state.encode())
             rate.sleep()  # Control loop frequency
