@@ -112,8 +112,8 @@ class Lcm2MujocoBridge:
         for i in range(self.num_motor):
             ctrlrange = self.mj_model.actuator_ctrlrange[i]
             motor_tau = self.low_cmd.qj_tau[i] +\
-                        self.low_cmd.kp[i] * (self.low_cmd.qj_pos[i] - self.mj_data.sensordata[i] - self.joint_offsets[i]) +\
-                        self.low_cmd.kd[i] * (self.low_cmd.qj_vel[i] - self.mj_data.sensordata[i + self.num_motor])
+                        self.low_cmd.kp[i] * (self.low_cmd.qj_pos[i] - self.low_state.qj_pos[i]) +\
+                        self.low_cmd.kd[i] * (self.low_cmd.qj_vel[i] - self.low_state.qj_vel[i])
             self.mj_data.ctrl[i] = np.clip(motor_tau, ctrlrange[0], ctrlrange[1])
 
     def parse_common_low_state(self):
@@ -121,9 +121,12 @@ class Lcm2MujocoBridge:
             return -1
         
         for i in range(self.num_motor):
-            self.low_state.qj_pos[i] = self.mj_data.sensordata[i] + self.joint_offsets[i]
-            self.low_state.qj_vel[i] = self.mj_data.sensordata[i + self.num_motor]
-            self.low_state.qj_tau[i] = self.mj_data.sensordata[i + 2 * self.num_motor]
+            self.low_state.qj_pos[i] = self.mj_data.sensordata[i] + self.joint_offsets[i] \
+                + np.random.normal(0, self.mj_model.sensor_noise[i])
+            self.low_state.qj_vel[i] = self.mj_data.sensordata[i + self.num_motor] \
+                + np.random.normal(0, self.mj_model.sensor_noise[i + self.num_motor])
+            self.low_state.qj_tau[i] = self.mj_data.sensordata[i + 2 * self.num_motor] \
+                + np.random.normal(0, self.mj_model.sensor_noise[i + 2 * self.num_motor])
 
         if self.have_frame_sensor:
             # Ground truth position and velocity readings in the world frame
@@ -143,10 +146,14 @@ class Lcm2MujocoBridge:
                 self.low_state.foot_force = self.mj_data.sensordata[self.dim_motor_sensor + 16]
 
         if self.have_imu:
-            self.low_state.quaternion[0] = self.mj_data.sensordata[self.dim_motor_sensor + 0]
-            self.low_state.quaternion[1] = self.mj_data.sensordata[self.dim_motor_sensor + 1]
-            self.low_state.quaternion[2] = self.mj_data.sensordata[self.dim_motor_sensor + 2]
-            self.low_state.quaternion[3] = self.mj_data.sensordata[self.dim_motor_sensor + 3]
+            self.low_state.quaternion[0] = self.mj_data.sensordata[self.dim_motor_sensor + 0] \
+                + np.random.normal(0, self.mj_model.sensor_noise[self.dim_motor_sensor])
+            self.low_state.quaternion[1] = self.mj_data.sensordata[self.dim_motor_sensor + 1] \
+                + np.random.normal(0, self.mj_model.sensor_noise[self.dim_motor_sensor])
+            self.low_state.quaternion[2] = self.mj_data.sensordata[self.dim_motor_sensor + 2] \
+                + np.random.normal(0, self.mj_model.sensor_noise[self.dim_motor_sensor])
+            self.low_state.quaternion[3] = self.mj_data.sensordata[self.dim_motor_sensor + 3] \
+                + np.random.normal(0, self.mj_model.sensor_noise[self.dim_motor_sensor])
             
             quat = Quaternion(*self.low_state.quaternion)
             rpy = quat_to_rpy(quat)
@@ -155,8 +162,15 @@ class Lcm2MujocoBridge:
             self.low_state.rpy[2] = rpy[2]
 
             # Body frame angular rate and linear acceleration
+            # pdb.set_trace()
             self.low_state.omega[:] = self.mj_data.sensordata[self.dim_motor_sensor + 4:self.dim_motor_sensor + 7]
+            self.low_state.omega[0] += np.random.normal(0, self.mj_model.sensor_noise[self.dim_motor_sensor + 1])
+            self.low_state.omega[1] += np.random.normal(0, self.mj_model.sensor_noise[self.dim_motor_sensor + 1])
+            self.low_state.omega[2] += np.random.normal(0, self.mj_model.sensor_noise[self.dim_motor_sensor + 1])
             self.low_state.acceleration[:] = self.mj_data.sensordata[self.dim_motor_sensor + 7:self.dim_motor_sensor + 10]
+            self.low_state.acceleration[0] += np.random.normal(0, self.mj_model.sensor_noise[self.dim_motor_sensor + 2])
+            self.low_state.acceleration[1] += np.random.normal(0, self.mj_model.sensor_noise[self.dim_motor_sensor + 2])
+            self.low_state.acceleration[2] += np.random.normal(0, self.mj_model.sensor_noise[self.dim_motor_sensor + 2])
 
             # self.mj_data.qvel[3:6] # this is Eular angle rate != omega_body
             # self.low_state.omega[:] = omega_body.tolist()
