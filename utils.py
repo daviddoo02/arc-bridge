@@ -4,10 +4,10 @@ DTYPE = np.float32
 
 class Quaternion:
     def __init__(self, w:float=1, x:float=0, y:float=0, z:float=0):
-        self.w = DTYPE(w)
-        self.x = DTYPE(x)
-        self.y = DTYPE(y)
-        self.z = DTYPE(z)
+        self.w = float(w)
+        self.x = float(x)
+        self.y = float(y)
+        self.z = float(z)
         self._norm = np.sqrt(self.w*self.w+self.x*self.x+self.y*self.y+self.z*self.z, dtype=DTYPE)
 
     def to_numpy(self):
@@ -28,7 +28,7 @@ class Quaternion:
     def inverse(self):
         return Quaternion(self.w/(self._norm*self._norm),-self.x/(self._norm*self._norm),-self.y/(self._norm*self._norm),-self.z/(self._norm*self._norm))
     
-    def __str__(self) -> str:
+    def __repr__(self):
         return '['+str(self.w)+', '+str(self.x)+', '+str(self.y)+', '+str(self.z)+']'
 
 
@@ -72,11 +72,11 @@ def rpy_to_quat(rpy)->Quaternion:
     sp = np.sin(rpy[1] * 0.5)
     cr = np.cos(rpy[0] * 0.5)
     sr = np.sin(rpy[0] * 0.5)
-    q = Quaternion()
-    q.w = cr * cp * cy + sr * sp * sy
-    q.x = sr * cp * cy - cr * sp * sy
-    q.y = cr * sp * cy + sr * cp * sy
-    q.z = cr * cp * sy - sr * sp * cy
+    q_w = cr * cp * cy + sr * sp * sy
+    q_x = sr * cp * cy - cr * sp * sy
+    q_y = cr * sp * cy + sr * cp * sy
+    q_z = cr * cp * sy - sr * sp * cy
+    q = Quaternion(q_w, q_x, q_y, q_z)
     return q
 
 def quat_wxyz_to_xyzw(q):
