@@ -37,11 +37,15 @@ class Tron1PointfootBridge(Lcm2MujocoBridge):
         self.low_state.quaternion = [1, 0, 0, 0] # wxyz
         self.low_cmd.contact = [1, 1]
         self.foot_radius = 0.032
+        self.gravity = np.array([0, 0, -9.81])
+        self.hip_pos_body_frame = np.array([0.05556 + 0.03, -0.105, -0.2602,
+                                            0.05556 + 0.03,  0.105, -0.2602]).reshape(2, 3)
 
         # Contact estimation
         self.P_hat = np.zeros(self.pin_model.nv) # estimated generalized momentum
         self.Ko = 100 # observer gain
         self.contact_threshold = -4
+        self.selection_mat = np.eye(self.pin_model.nv, self.num_motor, k=-6)
 
         # Signal smoothing
         self.se_filter = MovingWindowFilter(window_size=10, dim=6)
@@ -63,7 +67,7 @@ class Tron1PointfootBridge(Lcm2MujocoBridge):
 
         # Predict based on accelerations
         acc_world = R_body_to_world @ acc_body
-        se_state = self.KF.predict(acc_world + np.array([0, 0, -9.81]))
+        se_state = self.KF.predict(acc_world + self.gravity)
         # print(f"GT Vel: {self.mj_data.sensordata[self.dim_motor_sensor + 13:self.dim_motor_sensor + 16]}")
         # print(f"GT Pz: {self.mj_data.sensordata[self.dim_motor_sensor + 12]}")
 
@@ -202,12 +206,12 @@ class Tron1PointfootBridge(Lcm2MujocoBridge):
         dq = np.concatenate((self.low_state.velocity, self.low_state.omega, self.low_state.qj_vel), axis=0)
 
         # H and C
-        T_H = np.eye(self.pin_model.nv)
-        T_H[:3, :3] = R_body_to_world
-        H_prime = T_H @ self.pin_data.M @ T_H.T
+        transform_mat = np.eye(self.pin_model.nv)
+        transform_mat[:3, :3] = R_body_to_world
+        H_prime = transform_mat @ self.pin_data.M @ transform_mat.T
         v_temp = np.zeros((self.pin_model.nv))
         v_temp[:3] = np.cross(R_body_to_world @ pin_v[3:6], dq[:3])
-        C_prime = T_H @ self.pin_data.nle - H_prime @ v_temp
+        C_prime = transform_mat @ self.pin_data.nle - H_prime @ v_temp
         # print(f"H:\n{self.pin_data.M}")
         # print(f"H:\n{temp_inertia_mat}")
         # print(f"H_diff:\n{H_prime - temp_inertia_mat}")
@@ -221,11 +225,9 @@ class Tron1PointfootBridge(Lcm2MujocoBridge):
         coriolis_mat = pin.computeCoriolisMatrix(self.pin_model, self.pin_data, pin_q, pin_v)
         generalized_gravity = pin.computeGeneralizedGravity(self.pin_model, self.pin_data, pin_q)
         tau_motor = np.array(self.low_cmd.qj_tau)
-        B = np.zeros((self.pin_model.nv, self.num_motor))
-        B[6:, :] = np.eye(self.num_motor)
         P_curr = self.pin_data.M @ pin_v
         tau_ext_hat = self.Ko * (P_curr - self.P_hat)[6:]
-        dP_hat = coriolis_mat.T @ pin_v - generalized_gravity + B @ tau_motor + B @ tau_ext_hat
+        dP_hat = coriolis_mat.T @ pin_v - generalized_gravity + self.selection_mat @ tau_motor + self.selection_mat @ tau_ext_hat
         self.P_hat += dP_hat * self.config.dt_sim
         # print(f"right foot: {tau_ext_hat[2]:.4f} phase: {self.low_cmd.contact[0]:.4f}\t\
         #        left foot: {tau_ext_hat[5]:.4f}, phase: {self.low_cmd.contact[1]:.4f}")
@@ -242,7 +244,7 @@ class Tron1PointfootBridge(Lcm2MujocoBridge):
                                           pin.WORLD) # J_G maps body velocity to world twist
         J_G_to_A = np.eye(3, 6)
         J_G_to_A[:3, 3:] = - pin.skew(pin_q[:3])
-        J_lin_tor = J_G_to_A @ J_geom_tor @ T_H.T
+        J_lin_tor = J_G_to_A @ J_geom_tor @ transform_mat.T
         J_tor = np.concatenate((J_lin_tor, J_geom_tor[3:, :]), axis=0)
         # print(f"J_geom_tor:\n{J_geom_tor}")
         # print(f"J_tor:\n{J_tor}")
@@ -256,9 +258,9 @@ class Tron1PointfootBridge(Lcm2MujocoBridge):
                                                 pin_v,
                                                 self.pin_model.getFrameId("base_Link"), 
                                                 pin.WORLD)
-        dT_H = np.zeros((self.pin_model.nv, self.pin_model.nv))
-        dT_H[:3, :3] = - pin.skew(pin_v[3:6]) @ R_body_to_world.T
-        dJ_lin_tor = J_G_to_A @ (dJ_geom_tor @ T_H.T + J_geom_tor @ dT_H) #- pin.skew(dq[:3]) @ J_geom_tor[3:, :] @ T_H.T
+        transform_mat_derivative = np.zeros((self.pin_model.nv, self.pin_model.nv))
+        transform_mat_derivative[:3, :3] = - pin.skew(pin_v[3:6]) @ R_body_to_world.T
+        dJ_lin_tor = J_G_to_A @ (dJ_geom_tor @ transform_mat.T + J_geom_tor @ transform_mat_derivative) #- pin.skew(dq[:3]) @ J_geom_tor[3:, :] @ transform_mat.T
         dJ_tor = np.concatenate((dJ_lin_tor, dJ_geom_tor[3:, :]), axis=0)
         dJdq_tor = dJ_tor @ dq
         # assert(np.allclose(self.low_state.dJdq_tor, dJdq_tor, atol=1e-5))
@@ -272,7 +274,7 @@ class Tron1PointfootBridge(Lcm2MujocoBridge):
         left_foot_pos = self.pin_data.oMf[self.pin_model.getFrameId("foot_L_Link")].translation
         J_lin_foot_L_G_to_A = np.eye(3, 6)
         J_lin_foot_L_G_to_A[:, 3:] = -pin.skew(left_foot_pos)
-        J_lin_foot_L = J_lin_foot_L_G_to_A @ J_geom_foot_L @ T_H.T
+        J_lin_foot_L = J_lin_foot_L_G_to_A @ J_geom_foot_L @ transform_mat.T
 
         # dJdq_foot_L
         dJ_geom_foot_L = pin.frameJacobianTimeVariation(self.pin_model, 
@@ -281,7 +283,7 @@ class Tron1PointfootBridge(Lcm2MujocoBridge):
                                                         pin_v,
                                                         self.pin_model.getFrameId("foot_L_Link"), 
                                                         pin.WORLD)
-        dJ_lin_foot_L = J_lin_foot_L_G_to_A @ (dJ_geom_foot_L @ T_H.T + J_geom_foot_L @ dT_H)
+        dJ_lin_foot_L = J_lin_foot_L_G_to_A @ (dJ_geom_foot_L @ transform_mat.T + J_geom_foot_L @ transform_mat_derivative)
         dJdq_foot_L = dJ_lin_foot_L @ dq
 
         # J_lin_foot_R
@@ -292,7 +294,7 @@ class Tron1PointfootBridge(Lcm2MujocoBridge):
         right_foot_pos = self.pin_data.oMf[self.pin_model.getFrameId("foot_R_Link")].translation
         J_lin_foot_R_G_to_A = np.eye(3, 6)
         J_lin_foot_R_G_to_A[:, 3:] = -pin.skew(right_foot_pos)
-        J_lin_foot_R = J_lin_foot_R_G_to_A @ J_geom_foot_R @ T_H.T
+        J_lin_foot_R = J_lin_foot_R_G_to_A @ J_geom_foot_R @ transform_mat.T
 
         # dJdq_foot_R
         dJ_geom_foot_R = pin.frameJacobianTimeVariation(self.pin_model, 
@@ -301,7 +303,7 @@ class Tron1PointfootBridge(Lcm2MujocoBridge):
                                                         pin_v,
                                                         self.pin_model.getFrameId("foot_R_Link"), 
                                                         pin.WORLD)
-        dJ_lin_foot_R = J_lin_foot_R_G_to_A @ (dJ_geom_foot_R @ T_H.T + J_geom_foot_R @ dT_H)
+        dJ_lin_foot_R = J_lin_foot_R_G_to_A @ (dJ_geom_foot_R @ transform_mat.T + J_geom_foot_R @ transform_mat_derivative)
         dJdq_foot_R = dJ_lin_foot_R @ dq
 
         # Assemble gc jacobians
@@ -321,11 +323,9 @@ class Tron1PointfootBridge(Lcm2MujocoBridge):
         self.low_state.p_gc = p_gc.tolist()
 
     def calculate_foot_position_and_velocity(self):
-        hip_pos_body_frame = np.array([0.05556 + 0.03, -0.105, -0.2602,
-                                       0.05556 + 0.03,  0.105, -0.2602]).reshape(2, 3)
-        l1 = 0.077
-        l2 = 0.3
-        l3 = 0.3
+        l1 = 0.077 # abad to hip
+        l2 = 0.3   # hip to knee
+        l3 = 0.3   # knee to foot
 
         qj_pos_np = np.array(self.low_state.qj_pos).reshape((2, 3))
         qj_vel_np = np.array(self.low_state.qj_vel).reshape((2, 3))
@@ -354,7 +354,7 @@ class Tron1PointfootBridge(Lcm2MujocoBridge):
                            + l3*dth3*np.cos(th1)*np.cos(th3)*np.sin(th2) 
                            - l3*dth1*np.sin(th1)*np.sin(th2)*np.sin(th3)]).T
 
-        return p_foot + hip_pos_body_frame, v_foot
+        return p_foot + self.hip_pos_body_frame, v_foot
 
     def lowStateHandler(self, channel, data):
         if self.mj_data == None:
