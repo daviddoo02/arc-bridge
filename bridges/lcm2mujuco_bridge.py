@@ -83,16 +83,16 @@ class Lcm2MujocoBridge:
         self.lcm_handle_thread.join()
         print("LCM thread exited")
 
-    def register_low_state_subscriber(self):
-        if self.config.robot_type == "hopper":
-            # TODO make this more general
-            self.low_state_suber = self.lc.subscribe("HOPPER_STATE", self.lowStateHandler)
-        else:
-            self.low_state_suber = self.lc.subscribe(self.topic_state, self.lowStateHandler)
+    def register_low_state_subscriber(self, topic=None):
+        if topic is None:
+            topic = self.topic_state
+        self.low_state_suber = self.lc.subscribe(topic, self.lowStateHandler)
         self.low_state_suber.set_queue_capacity(1)
 
-    def register_low_cmd_subscriber(self):
-        self.low_cmd_suber = self.lc.subscribe(self.topic_cmd, self.lowCmdHandler)
+    def register_low_cmd_subscriber(self, topic=None):
+        if topic is None:
+            topic = self.topic_cmd
+        self.low_cmd_suber = self.lc.subscribe(topic, self.lowCmdHandler)
         self.low_cmd_suber.set_queue_capacity(1)
 
     def lcmHandleThread(self):
@@ -176,22 +176,20 @@ class Lcm2MujocoBridge:
             # self.low_state.omega[:] = omega_body.tolist()
         return 0
 
-    def publish_low_state(self):
-        if self.parse_common_low_state() < 0:
-            return
-        
-        self.parse_robot_specific_low_state()
+    def publish_low_state(self, topic=None, skip_common_state=False):
+        if topic is None:
+            topic = self.topic_state
 
-        # Encode and publish robot states
-        self.low_state.timestamp = time.time_ns()
-        self.lc.publish(self.topic_state, self.low_state.encode())
+        if not skip_common_state:
+            if self.parse_common_low_state() < 0:
+                return
 
-    def forward_processed_low_state(self, topic_to_publish=None):
         # Process robot kinematics and dynamics based on received common states
         self.parse_robot_specific_low_state()
+
         # Encode and publish robot states
         self.low_state.timestamp = time.time_ns()
-        self.lc.publish(topic_to_publish, self.low_state.encode())
+        self.lc.publish(topic, self.low_state.encode())
 
     @abstractmethod
     def parse_robot_specific_low_state(self):

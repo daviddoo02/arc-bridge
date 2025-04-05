@@ -16,20 +16,19 @@ def SimulationThread():
     while viewer.is_running():
         step_start = time.perf_counter()
         if args.block and not bridge.low_cmd_received:
-            bridge.publish_low_state()
+            bridge.publish_low_state(bridge.topic_state)
         else:
             locker.acquire()
             mujoco.mj_step(mj_model, mj_data)
             locker.release()
             bridge.publish_gamepad_cmd()
             if not args.replay:
-                bridge.publish_low_state()
+                bridge.publish_low_state(bridge.topic_state)
                 bridge.update_motor_cmd()
                 bridge.low_cmd_received = False
             else:
-                # Publish to a different topic to handle replay mode
-                # TODO make this more general
-                bridge.forward_processed_low_state("TRON1_STATE")
+                # Publish to topic_state.upper() for real robot
+                bridge.publish_low_state(bridge.topic_state.upper(), skip_common_state=True)
 
         time_until_next_step = mj_model.opt.timestep - (time.perf_counter() - step_start)
         if time_until_next_step > 0:
@@ -41,7 +40,7 @@ def SimulationThread():
 def ViewerThread():
     while viewer.is_running():
         locker.acquire()
-        if not args.replay and bridge.vis_se:
+        if bridge.vis_se:
             # Add geom of estimated position and velocity
             viewer.user_scn.ngeom = 0
             mujoco.mjv_initGeom(
@@ -125,9 +124,12 @@ if __name__ == "__main__":
         bridge = Lcm2MujocoBridge(mj_model, mj_data, robot_config)
 
     if args.replay:
-        bridge.register_low_state_subscriber()
+        # Subscribe to topic_state from real robot to parse common states
+        bridge.register_low_state_subscriber(bridge.topic_state)
+        # Subscribe to topic_cmd.upper() from upper level controller to prevent wrong command sources
+        bridge.register_low_cmd_subscriber(bridge.topic_cmd.upper())
     else:
-        bridge.register_low_cmd_subscriber()
+        bridge.register_low_cmd_subscriber(bridge.topic_cmd)
 
     # Separate simulation and visualization threads
     locker = threading.Lock()
