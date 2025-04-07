@@ -27,11 +27,11 @@ class Tron1PointfootBridge(Lcm2MujocoBridge):
         self.pin_data = self.pin_model.createData()
 
         # State estimator
-        self.height_init = 0.75
+        self.height_init = 0.7
         # Process noise (px, py, pz, vx, vy, vz)
         KF_Q = np.diag([0.002, 0.002, 0.002, 0.02, 0.02, 0.02])
         # Measurement noise (pz, vx, vy, vz)
-        KF_R = np.diag([0.001, 0.1, 0.1, 0.1])
+        KF_R = np.diag([0.001, 1, 1, 50])
         self.KF = FloatingBaseLinearStateEstimator(self.config.dt_sim, KF_Q, KF_R, self.height_init)
         self.low_state.position = [0, 0, self.height_init]
         self.low_state.quaternion = [1, 0, 0, 0] # wxyz
@@ -232,6 +232,7 @@ class Tron1PointfootBridge(Lcm2MujocoBridge):
         # print(f"right foot: {tau_ext_hat[2]:.4f} phase: {self.low_cmd.contact[0]:.4f}\t\
         #        left foot: {tau_ext_hat[5]:.4f}, phase: {self.low_cmd.contact[1]:.4f}")
         
+        # TODO use pinv(J_gc') * tau_ext_hat to estimate contact forces
         knee_impact = tau_ext_hat[[2, 5]]
         contact_mask = knee_impact < -4
         self.low_state.foot_force = contact_mask.astype(np.float32).tolist()
