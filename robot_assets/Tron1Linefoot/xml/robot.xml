@@ -74,6 +74,8 @@
                             <joint name="ankle_R_Joint" pos="0 0 0" axis="0 1 0" limited="true" range="-1.5708 1.15192" frictionloss="0.01" />
                             <geom class="visual" rgba="0.26667 0.26667 0.26667 1" mesh="ankle_R_Link" />
                             <geom name="ankle_R_collision" type="mesh" rgba="0 0 1 0" mesh="ankle_R_Link" />
+                            <site name="heel_R_site" type="sphere" pos="-0.08 0 -0.05" size="0.015"/>
+                            <site name="toe_R_site" type="sphere" pos="0.1 0 -0.05" size="0.015"/>
                         </body>
                     </body>
                 </body>
@@ -102,6 +104,8 @@
                             <joint name="ankle_L_Joint" pos="0 0 0" axis="0 1 0" limited="true" range="-1.5708 1.15192" frictionloss="0.01" />
                             <geom class="visual" rgba="0.26667 0.26667 0.26667 1" mesh="ankle_L_Link" />
                             <geom name="ankle_L_collision" type="mesh" rgba="0 0 1 0" mesh="ankle_L_Link" />
+                            <site name="heel_L_site" type="sphere" pos="-0.08 0 -0.05" size="0.015"/>
+                            <site name="toe_L_site" type="sphere" pos="0.1 0 -0.05" size="0.015"/>
                         </body>
                     </body>
                 </body>
