@@ -13,3 +13,8 @@ class Tron1WheeledBridge(Lcm2MujocoBridge):
         # Override motor offsets (rad)
         self.joint_offsets = np.array([0, 0.53 - 0.06, -0.55 - 0.54, 0,  
                                        0, 0.53 - 0.06, -0.55 - 0.54, 0])
+
+    def parse_robot_specific_low_state(self):
+
+        self.low_state.q_ob = self.mj_data.qpos[11:11+3]
+        self.low_state.dq_ob = self.mj_data.qvel[11:11+3]
