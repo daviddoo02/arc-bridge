@@ -10,6 +10,7 @@ class Config:
         "tron1_pointfoot":  "./robot_assets/Tron1Pointfoot/xml/robot.xml",
         "arm2link":         "./robot_assets/Arm2Link/arm2link_sensing.xml",
         "tron1_wheeled":    "./robot_assets/Tron1Wheeled/xml/robot.xml",
+        "tron1_linefoot":   "./robot_assets/Tron1Linefoot/xml/robot.xml",
     }
     valid_robot_types = list(robot_path_dict.keys())
 
