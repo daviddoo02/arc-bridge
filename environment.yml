@@ -1,0 +1,13 @@
+name: arcpy
+channels:
+  - defaults
+  - conda-forge
+dependencies:
+  - python = 3.11
+  - numpy = 2.2.2
+  - scipy = 1.15.1
+  - pinocchio = 3.4.0
+  - pip:
+    - inputs == 0.5
+    - mujoco == 3.3.0
+    - lcm == 1.5.1

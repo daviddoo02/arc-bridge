@@ -1,4 +1,4 @@
-# Robot Mujoco LCM
+# Agile Robot Control (ARC) Bridge
 Software bridge of a nominal robot controller to Mujoco simulator via LCM communication protocol.
 
 ## Dependencies
@@ -25,13 +25,13 @@ Software bridge of a nominal robot controller to Mujoco simulator via LCM commun
     ./gen_lcm_types.sh
     ```
     :warning: Redo this step every time if any LCM types are changed (may from new commits).
-6. Install dependencies in your favorite python environment.
+6. Create the conda environment with dependencies.
     ```sh
-    conda activate [name]
-    pip install -r requirements.txt
+    conda env create -f environment.yml
     ```
 7. Launch the entry script and follow the prompt to select robot type.
     ```sh
+    conda activate arcpy
     python robot_mujoco.py
     ```
     Use `--help` to find other launching options.

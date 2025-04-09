@@ -1,4 +1,0 @@
-lcm
-mujoco
-inputs
-scipy
