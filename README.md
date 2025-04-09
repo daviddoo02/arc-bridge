@@ -46,10 +46,11 @@ Software bridge of a nominal robot controller to Mujoco simulator via LCM commun
 ## Supported Robot & Controller
 :point_down: Click to find the corresponding controller
 - [x] [PEA Hopper](https://github.com/ARCaD-Lab-UM/hopper-kd-mpc/blob/main/HopperMain.m)
+- [x] [LimX Tron1 Pointfoot](https://github.com/ARCaD-Lab-UM/tron1-model-based-controller/blob/main/point_foot/MAIN_PF_LCM.m)
+- [x] [LimX Tron1 Linefoot](https://github.com/ARCaD-Lab-UM/tron1-model-based-controller/blob/main/line_foot/MAIN_LF_LCM.m)
 - [x] [Linefoot Biped](https://github.com/ARCaD-Lab-UM/TrainingWheel/blob/main/ex_Cassie/MAIN_cassie_LCM.m)
 - [x] [Pointfoot Biped](https://github.com/ARCaD-Lab-UM/TrainingWheel/blob/main/ex_tron1/MAIN_tron1_LCM.m)
-- [x] [LimX Tron 1 Pointfoot](https://github.com/ARCaD-Lab-UM/tron1-model-based-controller/blob/main/point_foot/MAIN_PF_LCM.m)
-- [x] 2 Link Arm
+<!-- - [x] 2 Link Arm -->
 
 ## Supported OS
 - Linux, macOS
