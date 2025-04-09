@@ -6,7 +6,7 @@ import numpy as np
 
 from threading import Thread
 
-from gamepad_reader import Gamepad
+from utils import Gamepad
 from lcm_types.robot_lcm import *
 from utils import *
 
