@@ -1,9 +1,11 @@
 import os
+import pdb
 import signal
 import sys
 from threading import Thread
 import time
 from functools import partial
+import traceback
 import limxsdk.robot.Rate as Rate
 import limxsdk.robot.Robot as Robot
 import limxsdk.robot.RobotType as RobotType
@@ -16,6 +18,8 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from lcm_types.robot_lcm import tron1_pointfoot_state_t, tron1_pointfoot_control_t
 from state_estimators import MovingWindowFilter
 from utils import *
+
+# TODO safety check and soft estop
 
 
 JOINT_OFFSETS_HIGH = np.array([0, 0.53 - 0.06, -0.55 - 0.54,  # right leg
@@ -168,9 +172,10 @@ if __name__ == '__main__':
 
 
     q_init = np.array(receiver.robot_state.q)
-    q_target = np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
+    # q_target = np.zeros(motor_number)
+    q_target = np.array([0.0, 0.25, 0.5, 0.0, -0.25, -0.5])
     num_init_steps = 4000
-    print("Enter initial pose...")
+    print("=> Enter initial pose...")
     for step in range(num_init_steps):
         alpha = step / num_init_steps
         for i in range(motor_number):
@@ -180,11 +185,10 @@ if __name__ == '__main__':
         robot.publishRobotCmd(cmd_msg)  # Publish the robot command
         rate.sleep()
 
+    imu_acc_filter = MovingWindowFilter(window_size=10, dim=3)
+    imu_gyro_filter = MovingWindowFilter(window_size=10, dim=3)
 
-    imu_acc_filter = MovingWindowFilter(window_size=1000, dim=3)
-    imu_gyro_filter = MovingWindowFilter(window_size=500, dim=3)
-
-    print("Start to publish robot command...")
+    print("=> Start to publish robot command...")
 
     # Capture Ctrl+C signal
     signal.signal(signal.SIGINT, signal.default_int_handler)
@@ -197,8 +201,8 @@ if __name__ == '__main__':
                 cmd_msg = datatypes.RobotCmd()
                 lcm_cmd_to_sdk_cmd(low_cmd, cmd_msg)
                 cmd_msg.stamp = time.time_ns()
-                tau_wbc = np.array(cmd_msg.tau).clip(-max_tau, max_tau)
-                tau_wbc[[0, 1, 3, 4]] = 0
+                tau_wbc = np.array(cmd_msg.tau).clip(-max_tau, max_tau) / 2
+                # tau_wbc[[0, 1, 3, 4]] = 0
                 cmd_msg.tau = tau_wbc.tolist()
                 robot.publishRobotCmd(cmd_msg)  # Publish the robot command
                 low_cmd = None
@@ -232,7 +236,7 @@ if __name__ == '__main__':
         cmd_msg.tau = [0.0 for _ in range(motor_number)]
         cmd_msg.Kp = [0.0 for _ in range(motor_number)]
         cmd_msg.Kd = [0.0 for _ in range(motor_number)]
-        print("Enter zero torque mode!!!!!!!!")
+        print("=> ESTOP. Enter zero torque mode!")
         for i in range(100):
             robot.publishRobotCmd(cmd_msg)  # Publish the robot command
             rate.sleep()

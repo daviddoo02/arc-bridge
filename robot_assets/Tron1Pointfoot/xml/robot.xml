@@ -39,6 +39,10 @@
         <key name="0" qpos="0 0 0.85 1 0 0 0 0 0 0 0 0 0" />
     </keyframe>
 
+    <!-- <equality>
+        <weld name="fix_torso" body1="base_Link" relpose="0 0 -.7 1 0 0 0" solimp="0.9 0.95 0.001 0.5 2" solref="0.02 1"/>
+    </equality> -->
+
     <worldbody>
         <geom name="floor" rgba="0.5 0.6 0.7 1" pos="0 0 0" size="0 0 0.25" type="plane" material="matplane" condim="3"/>
         <camera name="track" mode="trackcom" pos="0 -2.3 1.6" xyaxes="1 0 0 0 0.707 0.707"/>
