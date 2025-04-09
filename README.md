@@ -10,7 +10,7 @@ Software bridge of a nominal robot controller to Mujoco simulator via LCM commun
 1. Make sure you have java installed. Type `javac` to verify.
 2. Clone this repo using **SSH** and initialize LCM as a submodule.
     ```sh
-    git clone git@github.com:ARCaD-Lab-UM/robot_mujoco_lcm.git
+    git clone git@github.com:ARCaD-Lab-UM/agile-robot-control-bridge.git
     git submodule update --init
     ```
 3. Build and **install** LCM from source (under `<lcm_types/lcm>` folder) by following the [official instructions](https://lcm-proj.github.io/lcm/content/build-instructions.html)
@@ -63,7 +63,7 @@ Software bridge of a nominal robot controller to Mujoco simulator via LCM commun
 
 Use **SSH** option to clone this repo.
 ```sh
-git clone --recursive git@github.com:ARCaD-Lab-UM/robot_mujoco_lcm.git
+git clone --recursive git@github.com:ARCaD-Lab-UM/agile-robot-control-bridge.git
 ```
 </details>
 
