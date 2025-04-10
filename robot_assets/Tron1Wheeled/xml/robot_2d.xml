@@ -37,7 +37,9 @@
 
     <keyframe>
         <!-- <key name="0" qpos="0 0.92 0 0 -0.1 0 0 0 -0.1 0 0" /> -->
-        <key name="0" qpos="0 0.92 0   0 -0.1 0 0   0 -0.1 0 0  0.5 0.01 0" /> 
+        <!-- <key name="0" qpos="0 0.92 0   0 -0.1 0 0   0 -0.1 0 0  0.5 0.01 0" />  -->
+        <!-- <key name="0" qpos="0.02 0.68 0   0 -0.494 -0.512 0   0 1.0768 -0.512 0  0.2 0.01 0" />  -->
+        <key name="0" qpos="0.12 0.7602 0   0 0.6478 -0.7057 0   0 -0.53 -0.3392 0  0.4 0.01 0" /> 
     </keyframe>
 
     <worldbody>
@@ -76,7 +78,7 @@
                             <inertial pos="3e-05 0.00807 -2e-05" quat="0.683013 0.183016 0.183017 0.683011" mass="1.08" diaginertia="0.00974272 0.00515568 0.00515344" />
                             <joint name="wheel_L_Joint" pos="0 0 0" axis="0 1 0" limited="true" range="-1000000 1000000" frictionloss="0.01" />
                             <geom class="visual" rgba="0.26667 0.26667 0.26667 1" mesh="wheel_L_Link" />
-                            <geom name="wheel_L_collision" pos="0.0 0.008 0.0" size="0.127 0.005" quat="0.707107 0.707107 0 0" type="cylinder" rgba="1 0.423529 0.0392157 1"   friction="0.8 0.005 0.0001" />
+                            <geom name="wheel_L_collision" pos="0.0 0.008 0.0" size="0.127 0.005" quat="0.707107 0.707107 0 0" type="cylinder" rgba="1 0.423529 0.0392157 1"   friction="0.9 0.005 0.0001" />
                         </body>
                     </body>
                 </body>
@@ -103,7 +105,7 @@
                             <inertial pos="3e-05 -0.00807 -2e-05" quat="0.683011 0.183017 0.183016 0.683013" mass="1.08" diaginertia="0.00974272 0.00515568 0.00515344" />
                             <joint name="wheel_R_Joint" pos="0 0 0" axis="0 1 0" limited="true" range="-1000000 1000000" frictionloss="0.01" />
                             <geom class="visual" rgba="0.26667 0.26667 0.26667 1" mesh="wheel_R_Link" />
-                            <geom name="wheel_R_collision" pos="0.0 -0.008 0.0" size="0.127 0.005" quat="0.707107 0.707107 0 0" type="cylinder" rgba="1 0.423529 0.0392157 1"  friction="0.8 0.005 0.0001" />
+                            <geom name="wheel_R_collision" pos="0.0 -0.008 0.0" size="0.127 0.005" quat="0.707107 0.707107 0 0" type="cylinder" rgba="1 0.423529 0.0392157 1"  friction="0.9 0.005 0.0001" />
                         </body>
                     </body>
                 </body>
