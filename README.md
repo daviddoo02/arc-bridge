@@ -55,7 +55,7 @@ Software bridge of a nominal robot controller to Mujoco simulator via LCM commun
 ## Supported OS
 - Linux, macOS
 
-## Known Issues
+## Troubleshooting
 <details>
     <summary>  
         <b> Permission denied when initializing LCM as a submodule </b>
