@@ -32,13 +32,82 @@ class Tron1LinefootBridge(Lcm2MujocoBridge):
         self.pin_model = pin.buildModelFromMJCF(self.config.robot_xml_path)
         self.pin_data = self.pin_model.createData()
 
+        # State estimator
+        self.height_init = 0.7
+        # Process noise (px, py, pz, vx, vy, vz)
+        KF_Q = np.diag([0.002, 0.002, 0.002, 0.02, 0.02, 0.02])
+        # Measurement noise (pz, vx, vy, vz)
+        KF_R = np.diag([0.001, 1, 1, 100])
+        self.KF = FloatingBaseLinearStateEstimator(self.config.dt_sim, KF_Q, KF_R, self.height_init)
+        self.low_state.position = [0, 0, self.height_init]
+        self.low_state.quaternion = [1, 0, 0, 0] # wxyz
+        self.low_cmd.contact = [1, 1]
+        self.foot_radius = 0.032
+        self.gravity = np.array([0, 0, -9.81])
+        self.hip_pos_body_frame = np.array([0.05556 + 0.03, -0.105, -0.2602,
+                                            0.05556 + 0.03,  0.105, -0.2602]).reshape(2, 3)
+
+        # Signal smoothing
+        self.se_filter = MovingWindowFilter(window_size=10, dim=6)
+
+        # Visualization
+        self.vis_se = True # override default flag
+        self.vis_pos_est = np.array([0, 0, self.height_init])
+        self.vis_vel_est = np.zeros(3)
+        self.vis_R_body = np.eye(3)
+        self.vis_box_size = [0.1, 0.1, 0.08]
+
+    def update_state_estimation(self):
+        #* torso twist linear in pin.LOCAL_WORLD_ALIGNED is the same as v_world!!!
+
+        # Retrive states from IMU readings
+        omega_body = self.low_state.omega
+        acc_body = self.low_state.acceleration
+        R_body_to_world = quat_to_rot(Quaternion(*self.low_state.quaternion))
+
+        # Predict based on accelerations
+        acc_world = R_body_to_world @ acc_body
+        se_state = self.KF.predict(acc_world + self.gravity)
+        # print(f"GT Vel: {self.mj_data.sensordata[self.dim_motor_sensor + 13:self.dim_motor_sensor + 16]}")
+        # print(f"GT Pz: {self.mj_data.sensordata[self.dim_motor_sensor + 12]}")
+
+        pf, vf = self.calculate_foot_position_and_velocity() # body frame
+        # Correct based on foot contact
+        for idx in range(self.num_legs):
+            if self.low_cmd.contact[idx] > 0.2:
+            # if self.low_state.foot_force[idx] > 0:
+                foot_vel_body = vf[idx]
+                vel_measured = -R_body_to_world @ (foot_vel_body + np.cross(omega_body, pf[idx]))
+                height_measured = -(R_body_to_world @ pf[idx])[2] + self.foot_radius
+                se_state = self.KF.correct(np.append(height_measured, vel_measured))
+                # print(f"FK Vel: {vel_measured}\t 
+                # phase: {self.low_cmd.contact[idx]}\t 
+                # force: {self.low_state.foot_force[idx]}")
+                # print(f"FK Pz: {height_measured}")
+
+        # TODO the spike in vz is actually very bad, figure out what is the cause
+        se_state_smoothed = self.se_filter.calculate_average(se_state)
+
+        # Update visualization
+        self.vis_pos_est = se_state_smoothed[:3]
+        self.vis_vel_est = se_state_smoothed[3:]
+        self.vis_R_body = R_body_to_world
+
+        # Write estimated states into low_state
+        # self.low_state.position[2] = self.height_init
+        self.low_state.position[2] = se_state_smoothed[2]
+        self.low_state.velocity[:] = se_state_smoothed[3:]
+
+        # Handle reset
+        if self.low_cmd.reset_se:
+            self.KF.reset(np.array([0, 0, self.height_init, 0, 0, 0]))
+
     def parse_robot_specific_low_state(self, backend="pinocchio"):
         # Parse common robot states to low_state first
         # Required fields: position, quaternion, velocity, omega, qj_pos, qj_vel
 
         # Update low_state.position[2] and low_state.velocity
-        # TODO implement state estimation
-        # self.update_state_estimation()
+        self.update_state_estimation()
 
         if backend == "pinocchio":
             # Overwrite position to (0, 0, pz)
@@ -229,3 +298,37 @@ class Tron1LinefootBridge(Lcm2MujocoBridge):
         self.low_state.J_gc = J_gc.tolist()
         self.low_state.dJdq_gc = dJdq_gc.tolist()
         self.low_state.p_gc = p_gc.tolist()
+
+    def calculate_foot_position_and_velocity(self):
+        l1 = 0.077 # abad to hip
+        l2 = 0.3   # hip to knee
+        l3 = 0.3   # knee to foot
+
+        qj_pos_np = np.array(self.low_state.qj_pos).reshape((2, 4))
+        qj_vel_np = np.array(self.low_state.qj_vel).reshape((2, 4))
+        th1, th2, th3 = qj_pos_np[:, 0], qj_pos_np[:, 1], qj_pos_np[:, 2]
+        dth1, dth2, dth3 = qj_vel_np[:, 0], qj_vel_np[:, 1], qj_vel_np[:, 2]
+
+        p_foot = np.array([-l1 - l3*np.sin(th2 + th3) - l2*np.sin(th2),
+                           np.sin(th1)*(l3*np.cos(th2 + th3) + l2*np.cos(th2)),
+                           -np.cos(th1)*(l3*np.cos(th2 + th3) + l2*np.cos(th2))]).T
+
+        v_foot = np.array([-l2*dth2*np.cos(th2) - l3*dth2*np.cos(th2 + th3) - l3*dth3*np.cos(th2 + th3),
+                           l2*dth1*np.cos(th1)*np.cos(th2) 
+                           - l2*dth2*np.sin(th1)*np.sin(th2) 
+                           + l3*dth1*np.cos(th1)*np.cos(th2)*np.cos(th3) 
+                           - l3*dth1*np.cos(th1)*np.sin(th2)*np.sin(th3) 
+                           - l3*dth2*np.cos(th2)*np.sin(th1)*np.sin(th3) 
+                           - l3*dth2*np.cos(th3)*np.sin(th1)*np.sin(th2) 
+                           - l3*dth3*np.cos(th2)*np.sin(th1)*np.sin(th3) 
+                           - l3*dth3*np.cos(th3)*np.sin(th1)*np.sin(th2),
+                           l2*dth1*np.sin(th1)*np.cos(th2) 
+                           + l2*dth2*np.cos(th1)*np.sin(th2) 
+                           + l3*dth1*np.sin(th1)*np.cos(th2)*np.cos(th3) 
+                           + l3*dth2*np.cos(th1)*np.cos(th2)*np.sin(th3) 
+                           + l3*dth2*np.cos(th1)*np.cos(th3)*np.sin(th2) 
+                           + l3*dth3*np.cos(th1)*np.cos(th2)*np.sin(th3) 
+                           + l3*dth3*np.cos(th1)*np.cos(th3)*np.sin(th2) 
+                           - l3*dth1*np.sin(th1)*np.sin(th2)*np.sin(th3)]).T
+
+        return p_foot + self.hip_pos_body_frame, v_foot
