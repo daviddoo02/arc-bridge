@@ -49,7 +49,7 @@
         <light directional="true" diffuse=".8 .8 .8" pos="0 0 10" dir="0 0 -10"/>
 
         <body name="base_Link" pos="0 0 0">
-            <inertial pos="0.0457123 0.000139854 -0.163809" quat="0.972578 -0.00615364 -0.232461 0.00398682" mass="9.595" diaginertia="0.154712 0.11093 0.0846371" />
+            <inertial pos="0.0457123 0.000139854 -0.163809" quat="0.972578 -0.00615364 -0.232461 0.00398682" mass="12" diaginertia="0.154712 0.11093 0.0846371" />
             <joint type="free" limited="false" damping="0.0000" stiffness="0.0000" armature="0"/>
             <site name="imu" pos="0 0 0"/>
             <geom class="visual" rgba="0.79216 0.81961 0.93333 1" mesh="base_Link" />
@@ -79,8 +79,8 @@
                             <geom class="visual" rgba="0.26667 0.26667 0.26667 1" mesh="ankle_R_Link" />
                             <geom name="ankle_R_collision" type="mesh" rgba="0 0 1 0" mesh="ankle_R_Link" />
 
-                            <site name="heel_R_site" type="sphere" pos="-0.08 0 -0.05" size="0.015"/>
-                            <site name="toe_R_site" type="sphere" pos="0.1 0 -0.05" size="0.015"/>
+                            <site name="heel_R_site" type="sphere" pos="-0.08 0 -0.05" size="0.03"/>
+                            <site name="toe_R_site" type="sphere" pos="0.1 0 -0.05" size="0.03"/>
                         </body>
                     </body>
                 </body>
@@ -110,8 +110,8 @@
                             <geom class="visual" rgba="0.26667 0.26667 0.26667 1" mesh="ankle_L_Link" />
                             <geom name="ankle_L_collision" type="mesh" rgba="0 0 1 0" mesh="ankle_L_Link" />
 
-                            <site name="heel_L_site" type="sphere" pos="-0.08 0 -0.05" size="0.015"/>
-                            <site name="toe_L_site" type="sphere" pos="0.1 0 -0.05" size="0.015"/>
+                            <site name="heel_L_site" type="sphere" pos="-0.08 0 -0.05" size="0.03"/>
+                            <site name="toe_L_site" type="sphere" pos="0.1 0 -0.05" size="0.03"/>
                         </body>
                     </body>
                 </body>
@@ -164,5 +164,10 @@
 
         <framepos name="frame_pos" objtype="site" objname="imu" />
         <framelinvel name="frame_vel" objtype="site" objname="imu" />
+
+        <touch name="foot_force_heel_R" site="heel_R_site" />
+        <touch name="foot_force_toe_R" site="toe_R_site" />
+        <touch name="foot_force_heel_L" site="heel_L_site" />
+        <touch name="foot_force_toe_L" site="toe_L_site" />
     </sensor>
 </mujoco>
