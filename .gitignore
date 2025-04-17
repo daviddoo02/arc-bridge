@@ -173,3 +173,4 @@ lcm_types/*.py
 .vscode/
 .DS_Store
 .idea/
+MUJOCO_LOG.TXT
