@@ -42,7 +42,7 @@ class Tron1LinefootBridge(Lcm2MujocoBridge):
         self.low_state.position = [0, 0, self.height_init]
         self.low_state.quaternion = [1, 0, 0, 0] # wxyz
         self.low_cmd.contact = [1, 1]
-        self.foot_radius = 0.032
+        self.foot_radius = 0.05
         self.gravity = np.array([0, 0, -9.81])
         self.hip_pos_body_frame = np.array([0.05556 + 0.03, -0.105, -0.2602,
                                             0.05556 + 0.03,  0.105, -0.2602]).reshape(2, 3)
@@ -75,17 +75,18 @@ class Tron1LinefootBridge(Lcm2MujocoBridge):
         # Correct based on foot contact
         for idx in range(self.num_legs):
             if self.low_cmd.contact[idx] > 0.2:
-            # if self.low_state.foot_force[idx] > 0:
+            # if self.low_state.foot_force[idx*2] > 10:
                 foot_vel_body = vf[idx]
+                foot_vel_body[-1] = 0 #! set vz to zero, vf is still not very accurate
                 vel_measured = -R_body_to_world @ (foot_vel_body + np.cross(omega_body, pf[idx]))
                 height_measured = -(R_body_to_world @ pf[idx])[2] + self.foot_radius
                 se_state = self.KF.correct(np.append(height_measured, vel_measured))
-                # print(f"FK Vel: {vel_measured}\t 
-                # phase: {self.low_cmd.contact[idx]}\t 
-                # force: {self.low_state.foot_force[idx]}")
+                # se_state = self.KF.correct(np.append(self.low_state.position[2], vel_measured))
+                # print(f"FK Vel: {vel_measured}\t \
+                #         phase: {self.low_cmd.contact[idx]}\t \
+                #         force: {self.low_state.foot_force[idx]}")
                 # print(f"FK Pz: {height_measured}")
 
-        # TODO the spike in vz is actually very bad, figure out what is the cause
         se_state_smoothed = self.se_filter.calculate_average(se_state)
 
         # Update visualization
@@ -107,6 +108,7 @@ class Tron1LinefootBridge(Lcm2MujocoBridge):
         # Required fields: position, quaternion, velocity, omega, qj_pos, qj_vel
 
         # Update low_state.position[2] and low_state.velocity
+        # TODO may need move this as a separate call in the outter loop to not update during blocking
         self.update_state_estimation()
 
         if backend == "pinocchio":
@@ -332,3 +334,29 @@ class Tron1LinefootBridge(Lcm2MujocoBridge):
                            - l3*dth1*np.sin(th1)*np.sin(th2)*np.sin(th3)]).T
 
         return p_foot + self.hip_pos_body_frame, v_foot
+
+    def lowStateHandler(self, channel, data):
+        if self.mj_data == None:
+            return
+        # Get state msg from robot SDK topic
+        msg = eval(self.topic_state+"_t").decode(data)
+
+        # Update mj_data for visualization
+        self.mj_data.qpos[0] = self.low_state.position[0]
+        self.mj_data.qpos[1] = self.low_state.position[1]
+        self.mj_data.qpos[2] = self.low_state.position[2]
+        self.mj_data.qpos[3] = msg.quaternion[0]
+        self.mj_data.qpos[4] = msg.quaternion[1]
+        self.mj_data.qpos[5] = msg.quaternion[2]
+        self.mj_data.qpos[6] = msg.quaternion[3]
+        self.mj_data.qpos[7:7+8] = msg.qj_pos # ! This one doesn't need offsets since it matchs with xml
+        self.mj_data.qvel[:] = 0
+
+        # Partially update low_state
+        self.low_state.qj_pos[:] = (np.array(msg.qj_pos) + self.joint_offsets).tolist() # ! This one needs offsets since it should match with controller's model
+        self.low_state.qj_vel[:] = msg.qj_vel
+        self.low_state.qj_tau[:] = msg.qj_tau
+        self.low_state.acceleration[:] = msg.acceleration
+        self.low_state.omega[:] = msg.omega
+        self.low_state.quaternion[:] = msg.quaternion
+        self.low_state.rpy[:] = msg.rpy
