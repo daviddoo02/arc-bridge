@@ -46,6 +46,9 @@ class Lcm2MujocoBridge:
                 self.num_foot_sensor += 1
 
         self.print_scene_info()
+        print(f"=> have imu: {self.have_imu}")
+        print(f"=> have frame sensor: {self.have_frame_sensor}")
+        print(f"=> num foot sensor: {self.num_foot_sensor}")
 
         # LCM messages
         self.lc = lcm.LCM()
