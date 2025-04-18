@@ -149,20 +149,12 @@ class Lcm2MujocoBridge:
                 self.low_state.foot_force = self.mj_data.sensordata[self.dim_motor_sensor + 16]
 
         if self.have_imu:
-            self.low_state.quaternion[0] = self.mj_data.sensordata[self.dim_motor_sensor + 0] \
-                + np.random.normal(0, self.mj_model.sensor_noise[self.dim_motor_sensor])
-            self.low_state.quaternion[1] = self.mj_data.sensordata[self.dim_motor_sensor + 1] \
-                + np.random.normal(0, self.mj_model.sensor_noise[self.dim_motor_sensor])
-            self.low_state.quaternion[2] = self.mj_data.sensordata[self.dim_motor_sensor + 2] \
-                + np.random.normal(0, self.mj_model.sensor_noise[self.dim_motor_sensor])
-            self.low_state.quaternion[3] = self.mj_data.sensordata[self.dim_motor_sensor + 3] \
-                + np.random.normal(0, self.mj_model.sensor_noise[self.dim_motor_sensor])
-            
-            quat = Quaternion(*self.low_state.quaternion)
+            quat = Quaternion(*self.mj_data.sensordata[self.dim_motor_sensor:self.dim_motor_sensor + 4])
             rpy = quat_to_rpy(quat)
-            self.low_state.rpy[0] = rpy[0]
-            self.low_state.rpy[1] = rpy[1]
-            self.low_state.rpy[2] = rpy[2]
+            self.low_state.rpy[0] = rpy[0] + np.random.normal(0, self.mj_model.sensor_noise[self.dim_motor_sensor])
+            self.low_state.rpy[1] = rpy[1] + np.random.normal(0, self.mj_model.sensor_noise[self.dim_motor_sensor])
+            self.low_state.rpy[2] = rpy[2] + np.random.normal(0, self.mj_model.sensor_noise[self.dim_motor_sensor])
+            self.low_state.quaternion[:] = rpy_to_quat(rpy).to_numpy().tolist()
 
             # Body frame angular rate and linear acceleration
             # pdb.set_trace()
