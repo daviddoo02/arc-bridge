@@ -48,7 +48,15 @@ class Tron1LinefootBridge(Lcm2MujocoBridge):
                                             0.05556 + 0.03,  0.105, -0.2602]).reshape(2, 3)
 
         # Signal smoothing
-        self.se_filter = MovingWindowFilter(window_size=10, dim=6)
+        self.se_pos_filter = MovingWindowFilter(window_size=10, dim=3)
+        self.se_vel_filter = MovingWindowFilter(window_size=20, dim=3)
+
+        # Contact estimation
+        self.P_hat = np.zeros(self.pin_model.nv) # estimated generalized momentum
+        self.Ko = 100 # observer gain
+        self.contact_threshold = -5
+        self.contact_counter = np.zeros(self.num_legs)
+        self.selection_mat = np.eye(self.pin_model.nv, self.num_motor, k=-6)
 
         # Visualization
         self.vis_se = True # override default flag
@@ -87,17 +95,18 @@ class Tron1LinefootBridge(Lcm2MujocoBridge):
                 #         force: {self.low_state.foot_force[idx]}")
                 # print(f"FK Pz: {height_measured}")
 
-        se_state_smoothed = self.se_filter.calculate_average(se_state)
+        se_pos_smoothed = self.se_pos_filter.calculate_average(se_state[:3])
+        se_vel_smoothed = self.se_vel_filter.calculate_average(se_state[3:])
 
         # Update visualization
-        self.vis_pos_est = se_state_smoothed[:3]
-        self.vis_vel_est = se_state_smoothed[3:]
+        self.vis_pos_est = se_pos_smoothed
+        self.vis_vel_est = se_vel_smoothed
         self.vis_R_body = R_body_to_world
 
         # Write estimated states into low_state
         # self.low_state.position[2] = self.height_init
-        self.low_state.position[2] = se_state_smoothed[2]
-        self.low_state.velocity[:] = se_state_smoothed[3:]
+        self.low_state.position[2] = se_pos_smoothed[2]
+        self.low_state.velocity[:] = se_vel_smoothed
 
         # Handle reset
         if self.low_cmd.reset_se:
@@ -131,6 +140,33 @@ class Tron1LinefootBridge(Lcm2MujocoBridge):
             # Update forward kinematics, dynamics and frame placements in Pinocchio
             pin.computeAllTerms(self.pin_model, self.pin_data, pin_q, pin_v)
             pin.updateFramePlacements(self.pin_model, self.pin_data)
+
+            # Momentum observer
+            coriolis_mat = pin.computeCoriolisMatrix(self.pin_model, self.pin_data, pin_q, pin_v)
+            generalized_gravity = pin.computeGeneralizedGravity(self.pin_model, self.pin_data, pin_q)
+            tau_motor = np.array(self.low_cmd.qj_tau)
+            P_curr = self.pin_data.M @ pin_v
+            tau_ext_hat = self.Ko * (P_curr - self.P_hat)[6:]
+            dP_hat = coriolis_mat.T @ pin_v - generalized_gravity + self.selection_mat @ tau_motor + self.selection_mat @ tau_ext_hat
+            self.P_hat += dP_hat * self.config.dt_sim
+            
+            F_gc = np.linalg.pinv(np.array(self.low_state.J_gc)[:, 6:].T) @ tau_ext_hat
+            F_leg_gc = F_gc.reshape(2, -1)
+            F_foot_gc = np.sum(F_leg_gc, axis=1)
+            # print(f"right foot: {F_foot_gc[0]:.4f} phase: {self.low_cmd.contact[0]:.4f}\t\
+            #        left foot: {F_foot_gc[1]:.4f}, phase: {self.low_cmd.contact[1]:.4f}")
+
+            contact_mask = F_foot_gc > 20
+
+            self.low_state.foot_force = [0, 0, 0, 0]
+            for idx in range(self.num_legs):
+                if contact_mask[idx]:
+                    self.contact_counter[idx] += 1
+                    if self.contact_counter[idx] > 2:
+                        self.low_state.foot_force[idx*2] = 1
+                        self.low_state.foot_force[idx*2 + 1] = 1
+                else:
+                    self.contact_counter[idx] = 0
 
             # Retrive states from Pinocchio data
             self.update_kinematics_and_dynamics_pinocchio(pin_q, pin_v)
