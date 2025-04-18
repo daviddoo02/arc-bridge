@@ -49,8 +49,8 @@ elif ROBOT_TYPE == "LF":
     DEFAULT_JOINT_OFFSETS = np.array([0, 0.53 - 0.06, -0.55 - 0.54, 0,  # right leg
                                     0, 0.53 - 0.06, -0.55 - 0.54, 0]) # left leg
 
-    DEFAULT_JOINT_POS = np.array([0.0, 0.25, -0.5, 0, 
-                                0.0, 0.25, -0.5, 0])
+    DEFAULT_JOINT_POS = np.array([0.0, 0.0, -0.0, 0, 
+                                  0.0, 0.0, -0.0, 0])
 
     JOINT_IDX_2_MOTOR_IDX = np.array([4, 5, 6, 7,
                                     0, 1, 2, 3])
@@ -214,8 +214,12 @@ if __name__ == '__main__':
         robot.publishRobotCmd(cmd_msg)  # Publish the robot command
         rate.sleep()
 
-    imu_acc_filter = MovingWindowFilter(window_size=3, dim=3)
-    imu_gyro_filter = MovingWindowFilter(window_size=3, dim=3)
+    imu_acc_filter = MovingWindowFilter(window_size=20, dim=3)
+    imu_gyro_filter = MovingWindowFilter(window_size=20, dim=3)
+    joint_vel_filter = MovingWindowFilter(window_size=20, dim=8)
+    joint_tau_filter = MovingWindowFilter(window_size=3, dim=8)
+
+    # TODO hip motor speed is vibrating no matter what??
 
     print("=> Start to publish robot state...")
 
@@ -231,6 +235,7 @@ if __name__ == '__main__':
                 lcm_cmd_to_sdk_cmd(low_cmd, cmd_msg)
                 cmd_msg.stamp = time.time_ns()
                 tau_wbc = np.array(cmd_msg.tau).clip(-max_tau, max_tau)
+                tau_wbc = joint_tau_filter.calculate_average(tau_wbc)
                 # tau_wbc[[0, 1, 3, 4]] = 0
                 cmd_msg.tau = tau_wbc.tolist()
                 robot.publishRobotCmd(cmd_msg)  # Publish the robot command
@@ -239,6 +244,7 @@ if __name__ == '__main__':
             low_state = eval(TOPIC_STATE + "_t")()
             if receiver.robot_state is not None:
                 sdk_state_to_lcm_state(receiver.robot_state, low_state)
+                low_state.qj_vel = joint_vel_filter.calculate_average(np.array(low_state.qj_vel))
 
             if receiver.imu is not None:
                 low_state.acceleration = imu_acc_filter.calculate_average(np.array(receiver.imu.acc))
