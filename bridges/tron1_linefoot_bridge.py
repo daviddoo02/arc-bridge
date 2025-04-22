@@ -13,9 +13,14 @@ class Tron1LinefootBridge(Lcm2MujocoBridge):
 
         # Override motor offsets (rad)
         self.joint_offsets = np.array([0, 0.53 - 0.06, -0.55 - 0.54, 0,  
-                                       0, 0.53 - 0.06, -0.55 - 0.54, 0])
+                                       0, 0.53 - 0.06, -0.55 - 0.54, 0]) * 0
+        
+        # CoM offsets (m)
+        self.com_offsets = np.array([0, 0, 0.2602])
 
-        self.torso_name = "base_Link" # body
+        #! TODO transfrom IMU measurements to com frame
+
+        self.torso_name = "com" # site
         self.left_foot_link_name = "ankle_L_Link" # body
         self.right_foot_link_name = "ankle_R_Link" # body
         self.left_heel_name = "heel_L_site" # site
@@ -33,7 +38,7 @@ class Tron1LinefootBridge(Lcm2MujocoBridge):
         self.pin_data = self.pin_model.createData()
 
         # State estimator
-        self.height_init = 0.7
+        self.height_init = 0.55
         # Process noise (px, py, pz, vx, vy, vz)
         KF_Q = np.diag([0.002, 0.002, 0.002, 0.02, 0.02, 0.02])
         # Measurement noise (pz, vx, vy, vz)
@@ -42,10 +47,11 @@ class Tron1LinefootBridge(Lcm2MujocoBridge):
         self.low_state.position = [0, 0, self.height_init]
         self.low_state.quaternion = [1, 0, 0, 0] # wxyz
         self.low_cmd.contact = [1, 1]
-        self.foot_radius = 0.05
+        self.foot_radius = 0.055
         self.gravity = np.array([0, 0, -9.81])
-        self.hip_pos_body_frame = np.array([0.05556 + 0.03, -0.105, -0.2602,
-                                            0.05556 + 0.03,  0.105, -0.2602]).reshape(2, 3)
+        self.hip_pos_body_frame = np.array([0.05556, -0.105, -0.2602,
+                                            0.05556,  0.105, -0.2602]).reshape(2, 3)\
+                                            + self.com_offsets
 
         # Signal smoothing
         self.se_pos_filter = MovingWindowFilter(window_size=10, dim=3)
@@ -187,8 +193,9 @@ class Tron1LinefootBridge(Lcm2MujocoBridge):
         
         # Torso jacobians
         # J_tor
-        torso_id = mujoco.mj_name2id(self.mj_model, mujoco._enums.mjtObj.mjOBJ_BODY, self.torso_name)
-        torso_pos = self.mj_data.xpos[torso_id]
+        torso_site_id = mujoco.mj_name2id(self.mj_model, mujoco._enums.mjtObj.mjOBJ_SITE, self.torso_name)
+        torso_id = self.mj_model.site_bodyid[torso_site_id] # find the body id where the COM site is attached
+        torso_pos = self.mj_data.site_xpos[torso_site_id] # find the site position in world frame
         J_tor = np.zeros((6, self.mj_model.nv))
         mujoco.mj_jac(self.mj_model, self.mj_data, J_tor[:3, :], J_tor[3:, :], torso_pos, torso_id)
         self.low_state.J_tor = J_tor.tolist()
@@ -385,11 +392,12 @@ class Tron1LinefootBridge(Lcm2MujocoBridge):
         self.mj_data.qpos[4] = msg.quaternion[1]
         self.mj_data.qpos[5] = msg.quaternion[2]
         self.mj_data.qpos[6] = msg.quaternion[3]
-        self.mj_data.qpos[7:7+8] = msg.qj_pos # ! This one doesn't need offsets since it matchs with xml
+        self.mj_data.qpos[7:7+8] = msg.qj_pos
         self.mj_data.qvel[:] = 0
 
         # Partially update low_state
-        self.low_state.qj_pos[:] = (np.array(msg.qj_pos) + self.joint_offsets).tolist() # ! This one needs offsets since it should match with controller's model
+        # self.low_state.qj_pos[:] = (np.array(msg.qj_pos) + self.joint_offsets).tolist() # ! This one needs offsets since it should match with controller's model
+        self.low_state.qj_pos[:] = msg.qj_pos
         self.low_state.qj_vel[:] = msg.qj_vel
         self.low_state.qj_tau[:] = msg.qj_tau
         self.low_state.acceleration[:] = msg.acceleration
