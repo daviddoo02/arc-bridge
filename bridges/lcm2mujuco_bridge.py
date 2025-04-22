@@ -154,7 +154,7 @@ class Lcm2MujocoBridge:
             self.low_state.rpy[0] = rpy[0] + np.random.normal(0, self.mj_model.sensor_noise[self.dim_motor_sensor])
             self.low_state.rpy[1] = rpy[1] + np.random.normal(0, self.mj_model.sensor_noise[self.dim_motor_sensor])
             self.low_state.rpy[2] = rpy[2] + np.random.normal(0, self.mj_model.sensor_noise[self.dim_motor_sensor])
-            self.low_state.quaternion[:] = rpy_to_quat(rpy).to_numpy().tolist()
+            self.low_state.quaternion[:] = rpy_to_quat(self.low_state.rpy).to_numpy().tolist()
 
             # Body frame angular rate and linear acceleration
             # pdb.set_trace()
