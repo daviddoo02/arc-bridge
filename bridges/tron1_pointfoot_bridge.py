@@ -234,7 +234,7 @@ class Tron1PointfootBridge(Lcm2MujocoBridge):
         
         # TODO use pinv(J_gc') * tau_ext_hat to estimate contact forces
         knee_impact = tau_ext_hat[[2, 5]]
-        contact_mask = knee_impact < -4
+        contact_mask = knee_impact < self.contact_threshold
         self.low_state.foot_force = contact_mask.astype(np.float32).tolist()
         # print(f"Detected contact: {self.low_state.foot_force}")
 
