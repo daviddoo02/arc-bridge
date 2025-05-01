@@ -66,13 +66,13 @@
                 
                 <body name="hip_R_Link" pos="-0.077 -0.0205 0">
                     <inertial pos="0 0.0477 -0.0492" quat="0.4625   -0.0046    0.0743    0.8835" mass="2.3" diaginertia="0.0233264 0.0230229 0.00277548"/>
-                    <joint name="hip_R_Joint" pos="0 0 0" axis="0 1 0" limited="true" range="-1.01229 1.39626" />
+                    <joint name="hip_R_Joint" pos="0 0 0" axis="0 1 0" limited="true" range="-0.4823    1.9263" />
                     <geom class="visual" rgba="1 1 1 1" mesh="hip_R_Link" euler="0 -0.53 0"/>
                     <geom name="hip_R_collision" size="0.035 0.075" pos="-0.02 0.03 -0.172" type="cylinder" rgba="0 0 1 0" />
                     
                     <body name="knee_R_Link" pos="0 0.0205 -0.3">
                         <inertial pos="0 -0.0013 -0.225" mass="1.22" diaginertia="0.0144103 0.0143581 0.00061582" />
-                        <joint name="knee_R_Joint" pos="0 0 0" axis="0 1 0" limited="true" range="-1.36136 0.872665" />
+                        <joint name="knee_R_Joint" pos="0 0 0" axis="0 1 0" limited="true" range="-2.4414   -0.2073" />
                         <geom class="visual" rgba="0.79216 0.81961 0.93333 1" mesh="knee_R_Link" euler="0 0.55 0"/>
                         <geom name="knee_R_collision" size="0.02 0.13" pos="0 0 -0.1431" type="cylinder" rgba="0 0 1 0" />
                         
@@ -97,13 +97,13 @@
                 
                 <body name="hip_L_Link" pos="-0.077 0.0205 0">
                     <inertial pos="0 -0.0477 -0.0492" quat="0.8835    0.0743   -0.0046    0.4625" mass="2.3" diaginertia="0.0233264 0.0230229 0.00277548" />
-                    <joint name="hip_L_Joint" pos="0 0 0" axis="0 1 0" limited="true" range="-1.01229 1.39626" />
+                    <joint name="hip_L_Joint" pos="0 0 0" axis="0 1 0" limited="true" range="-0.4823    1.9263" />
                     <geom class="visual" rgba="1 1 1 1" mesh="hip_L_Link" euler="0 -0.53 0"/>
                     <geom name="hip_L_collision" size="0.035 0.075" pos="-0.02 -0.03 -0.172" type="cylinder" rgba="0 0 1 0" />
                     
                     <body name="knee_L_Link" pos="0 -0.0205 -0.3">
                         <inertial pos="0 0.0013 -0.225" mass="1.22" diaginertia="0.0144103 0.0143581 0.00061582" />
-                        <joint name="knee_L_Joint" pos="0 0 0" axis="0 1 0" limited="true" range="-1.36136 0.872665" />
+                        <joint name="knee_L_Joint" pos="0 0 0" axis="0 1 0" limited="true" range="-2.4414   -0.2073" />
                         <geom class="visual" rgba="0.79216 0.81961 0.93333 1" mesh="knee_L_Link" euler="0 0.55 0"/>
                         <geom name="knee_L_collision" size="0.02 0.13" pos="0 0 -0.1431" type="cylinder" rgba="0 0 1 0" />
                         
