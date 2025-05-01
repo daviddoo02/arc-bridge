@@ -16,7 +16,7 @@ class Tron1LinefootBridge(Lcm2MujocoBridge):
                                        0, 0.53 - 0.06, -0.55 - 0.54, 0]) * 0
         
         # CoM offsets (m)
-        self.com_offsets = np.array([0, 0, 0.2602])
+        self.com_offsets = np.array([0, 0, 0.2602]) * 0
 
         #! TODO transfrom IMU measurements to com frame
 
@@ -38,7 +38,7 @@ class Tron1LinefootBridge(Lcm2MujocoBridge):
         self.pin_data = self.pin_model.createData()
 
         # State estimator
-        self.height_init = 0.55
+        self.height_init = 0.75
         # Process noise (px, py, pz, vx, vy, vz)
         KF_Q = np.diag([0.002, 0.002, 0.002, 0.02, 0.02, 0.02])
         # Measurement noise (pz, vx, vy, vz)

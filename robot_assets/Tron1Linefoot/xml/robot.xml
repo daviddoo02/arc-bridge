@@ -36,7 +36,7 @@
         <option timestep="0.001"/>
 
     <keyframe>
-        <key name="0" qpos="0 0 0.55 1 0 0 0 0 0.8 -1.5 0.7 0 0.8 -1.5 0.7" />
+        <key name="0" qpos="0 0 0.75 1 0 0 0 0 0.8 -1.5 0.7 0 0.8 -1.5 0.7" />
     </keyframe>
 
     <!-- <equality>
@@ -49,16 +49,16 @@
         <light directional="true" diffuse=".8 .8 .8" pos="0 0 10" dir="0 0 -10"/>
 
         <body name="base_Link" pos="0 0 0">
-            <inertial pos="0.0457123 0.000139854 0.0964" quat="0.972578 -0.00615364 -0.232461 0.00398682" mass="12" diaginertia="0.154712 0.11093 0.0846371" />
+            <inertial pos="0.0457123 0.000139854 -0.163809" quat="0.972578 -0.00615364 -0.232461 0.00398682" mass="12" diaginertia="0.154712 0.11093 0.0846371" />
             <joint type="free" limited="false" damping="0.0000" stiffness="0.0000" armature="0"/>
-            <geom class="visual" rgba="0.79216 0.81961 0.93333 1" mesh="base_Link" pos="0 0 0.2602"/>
-            <geom name="base_collision" size="0.135 0.13 0.095" pos="0.03 0 0.1882" type="box" rgba="0 0 1 0" />
+            <geom class="visual" rgba="0.79216 0.81961 0.93333 1" mesh="base_Link" pos="0 0 0"/>
+            <geom name="base_collision" size="0.135 0.13 0.095" pos="0.03 0 -0.072" type="box" rgba="0 0 1 0" />
 
-            <!-- <site name="imu" pos="0 0 0"/> -->
-            <site name="imu" pos="0 0 0.2602"/>
+            <site name="imu" pos="0 0 0"/>
+            <!-- <site name="imu" pos="0 0 0.2602"/> -->
             <site class="visual" name="com" pos="0 0 0" type="sphere" size="0.03" rgba="1 0 0 0.8" />
 
-            <body name="abad_R_Link" pos="0.05556 -0.105 0">
+            <body name="abad_R_Link" pos="0.05556 -0.105 -0.2602">
                 <inertial pos="-0.06977 -0.04479 0.00057" quat="0.393019 0.394141 0.579772 0.595024" mass="1.469" diaginertia="0.00252289 0.00208104 0.00139163" />
                 <joint name="abad_R_Joint" pos="0 0 0" axis="1 0 0" limited="true" range="-1.39626 0.38397" />
                 <geom class="visual" rgba="0.79216 0.81961 0.93333 1" mesh="abad_R_Link" />
@@ -89,7 +89,7 @@
                 </body>
             </body>
             
-            <body name="abad_L_Link" pos="0.05556 0.105 0">
+            <body name="abad_L_Link" pos="0.05556 0.105 -0.2602">
                 <inertial pos="-0.06977 0.04479 0.00057" quat="0.595024 0.579772 0.394141 0.393019" mass="1.469" diaginertia="0.00252289 0.00208104 0.00139163" />
                 <joint name="abad_L_Joint" pos="0 0 0" axis="1 0 0" limited="true" range="-0.38397 1.39626" />
                 <geom class="visual" rgba="0.79216 0.81961 0.93333 1" mesh="abad_L_Link" />
