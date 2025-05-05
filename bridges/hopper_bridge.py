@@ -16,6 +16,7 @@ class HopperBridge(Lcm2MujocoBridge):
         # For state estimation visualization only
         self.vis_se = True
         self.vis_pos_est = np.array([0, 0, 0.3])
+        self.vis_vel_est = np.zeros(3)
         self.vis_R_body = np.eye(3)
         self.vis_box_size = [0.2, 0.02, 0.02]
 
@@ -69,6 +70,7 @@ class HopperBridge(Lcm2MujocoBridge):
         self.low_state.position[:] = pos_est.tolist()
         self.low_state.velocity[:] = vel_est.tolist()
         self.vis_pos_est = pos_est
+        self.vis_vel_est = vel_est
         self.vis_R_body = R_body
 
         # Handle reset request
