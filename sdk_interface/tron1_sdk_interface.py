@@ -46,11 +46,11 @@ elif ROBOT_TYPE == "LF":
     TOPIC_STATE = "tron1_linefoot_state" # state to mujoco bridge
     TOPIC_CONTROL = "tron1_linefoot_control".upper() # control from MATLAB
 
-    DEFAULT_JOINT_OFFSETS = np.array([0, 0.53 - 0.06, -0.55 - 0.54, 0,  # right leg
-                                    0, 0.53 - 0.06, -0.55 - 0.54, 0]) # left leg
+    DEFAULT_JOINT_OFFSETS = np.array([0, 0.53, -1.04, 0.536,  # right leg
+                                    0, 0.53, -1.04, 0.536]) # left leg
 
-    DEFAULT_JOINT_POS = np.array([0.0, 0.0, -0.0, 0, 
-                                  0.0, 0.0, -0.0, 0])
+    DEFAULT_JOINT_POS = np.array([0.0, 0.2, -0.3, 0.4, 
+                                  0.0, 0.2, -0.3, 0.4])
 
     JOINT_IDX_2_MOTOR_IDX = np.array([4, 5, 6, 7,
                                     0, 1, 2, 3])
@@ -67,14 +67,35 @@ class RobotReceiver:
         self.robot_state = None
         self.low_cmd = None
         self.is_running = True
+        self.imu_counter = 0
+        self.imu_timer = 0
+        self.encoder_counter = 0
+        self.encoder_timer = time.perf_counter()
+        self.print_callback_rate = False
 
     # Callback function for receiving imu
     def imuDataCallback(self, imu: datatypes.ImuData):
         self.imu = imu
+        if not self.print_callback_rate:
+            return
+        
+        self.imu_counter += 1
+        if self.imu_counter % 100 == 0:
+            current_time = time.perf_counter()
+            print(f"IMU rate: \t{100 / (current_time - self.imu_timer):.2f} Hz")
+            self.imu_timer = current_time
 
     # Callback function for receiving robot state
     def robotStateCallback(self, robot_state: datatypes.RobotState):
         self.robot_state = robot_state
+        if not self.print_callback_rate:
+            return
+        
+        self.encoder_counter += 1
+        if self.encoder_counter % 1000 == 0:
+            current_time = time.perf_counter()
+            print(f"Encoder rate: \t{1000 / (current_time - self.encoder_timer):.2f} Hz")
+            self.encoder_timer = current_time
 
     # Callback function for receiving sensor joy data
     def sensorJoyCallback(self, sensor_joy: datatypes.SensorJoy):
@@ -102,7 +123,7 @@ class RobotReceiver:
 def sdk_state_to_lcm_state(sdk_state: datatypes.RobotState, lcm_state):
     for idx in range(len(lcm_state.qj_pos)):
         motor_idx = JOINT_IDX_2_MOTOR_IDX[idx]
-        lcm_state.qj_pos[idx] = sdk_state.q[motor_idx] * MOTOR_POLARITY[motor_idx]
+        lcm_state.qj_pos[idx] = sdk_state.q[motor_idx] * MOTOR_POLARITY[motor_idx] + DEFAULT_JOINT_OFFSETS[idx]
         lcm_state.qj_vel[idx] = sdk_state.dq[motor_idx] * MOTOR_POLARITY[motor_idx]
         lcm_state.qj_tau[idx] = sdk_state.tau[motor_idx] * MOTOR_POLARITY[motor_idx]
 
@@ -216,10 +237,8 @@ if __name__ == '__main__':
 
     imu_acc_filter = MovingWindowFilter(window_size=20, dim=3)
     imu_gyro_filter = MovingWindowFilter(window_size=20, dim=3)
-    joint_vel_filter = MovingWindowFilter(window_size=20, dim=8)
-    joint_tau_filter = MovingWindowFilter(window_size=3, dim=8)
+    joint_vel_filter = MovingWindowFilter(window_size=5, dim=8)
 
-    # TODO hip motor speed is vibrating no matter what??
 
     print("=> Start to publish robot state...")
 
@@ -235,7 +254,6 @@ if __name__ == '__main__':
                 lcm_cmd_to_sdk_cmd(low_cmd, cmd_msg)
                 cmd_msg.stamp = time.time_ns()
                 tau_wbc = np.array(cmd_msg.tau).clip(-max_tau, max_tau)
-                tau_wbc = joint_tau_filter.calculate_average(tau_wbc)
                 # tau_wbc[[0, 1, 3, 4]] = 0
                 cmd_msg.tau = tau_wbc.tolist()
                 robot.publishRobotCmd(cmd_msg)  # Publish the robot command
@@ -254,6 +272,11 @@ if __name__ == '__main__':
                 low_state.rpy[0] = rpy[0]
                 low_state.rpy[1] = rpy[1]
                 low_state.rpy[2] = rpy[2] - yaw_init
+                # ========================= DEBUG IMU
+                # low_state.acceleration[:] = [0, 0, 9.8]
+                # low_state.omega[:] = [0, 0, 0]
+                # low_state.rpy[2] = 0
+                # ====================================
                 low_state.quaternion = rpy_to_quat(low_state.rpy).to_numpy().tolist()
 
             lc.publish(TOPIC_STATE, low_state.encode())
