@@ -19,8 +19,14 @@ struct tron1_linefoot_state_t
     double   qj_vel[8];
     double   qj_tau[8];
 
-    // Kinematics and dynamics
+    // Touch sensors
     double   foot_force[4]; // line foot
+
+    // Kinematics and dynamics
+
+    // [p_right_foot_world, p_left_foot_world]
+    double   p_ankle[6];
+    double   p_gc[12];
 
     double   inertia_mat[14][14]; // 6 + num_joint
     double   bias_force[14];
@@ -33,6 +39,4 @@ struct tron1_linefoot_state_t
     double   J_gc[12][14];
     double   dJdq_gc[12];
 
-    // [p_right_foot_world, p_left_foot_world]
-    double   p_gc[12];
 }

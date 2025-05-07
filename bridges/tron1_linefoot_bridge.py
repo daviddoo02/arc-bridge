@@ -268,6 +268,10 @@ class Tron1LinefootBridge(Lcm2MujocoBridge):
         p_gc = np.concatenate((right_heel_pos, right_toe_pos, left_heel_pos, left_toe_pos), axis=0)
         self.low_state.p_gc = p_gc.tolist()
 
+        right_ankle_pos = self.mj_data.xpos[right_ankle_id]
+        left_ankle_pos = self.mj_data.xpos[left_ankle_id]
+        self.low_state.p_ankle = np.concatenate((right_ankle_pos, left_ankle_pos), axis=0).tolist()
+
     def update_kinematics_and_dynamics_pinocchio(self, pin_q, pin_v):
         # Pinocchio computations
         R_body_to_world = pin.Quaternion(pin_q[3:7]).toRotationMatrix()
@@ -343,6 +347,11 @@ class Tron1LinefootBridge(Lcm2MujocoBridge):
         self.low_state.J_gc = J_gc.tolist()
         self.low_state.dJdq_gc = dJdq_gc.tolist()
         self.low_state.p_gc = p_gc.tolist()
+
+        # Ankle positions in world frame
+        right_ankle_pos = self.pin_data.oMf[self.pin_model.getFrameId(self.right_foot_link_name)].translation
+        left_ankle_pos = self.pin_data.oMf[self.pin_model.getFrameId(self.left_foot_link_name)].translation
+        self.low_state.p_ankle = np.concatenate((right_ankle_pos, left_ankle_pos), axis=0).tolist()
 
     def calculate_foot_position_and_velocity(self):
         l1 = 0.077 # abad to hip
