@@ -12,15 +12,13 @@ class Tron1LinefootBridge(Lcm2MujocoBridge):
         super().__init__(mj_model, mj_data, config)
 
         # Override motor offsets (rad)
-        self.joint_offsets = np.array([0, 0.53 - 0.06, -0.55 - 0.54, 0,  
-                                       0, 0.53 - 0.06, -0.55 - 0.54, 0]) * 0
+        self.joint_offsets = np.array([0, 0.53, -1.04, 0.536,  
+                                       0, 0.53, -1.04, 0.536])
         
         # CoM offsets (m)
         self.com_offsets = np.array([0, 0, 0.2602]) * 0
 
-        #! TODO transfrom IMU measurements to com frame
-
-        self.torso_name = "com" # site
+        self.torso_name = "imu" # site
         self.left_foot_link_name = "ankle_L_Link" # body
         self.right_foot_link_name = "ankle_R_Link" # body
         self.left_heel_name = "heel_L_site" # site
@@ -47,7 +45,7 @@ class Tron1LinefootBridge(Lcm2MujocoBridge):
         self.low_state.position = [0, 0, self.height_init]
         self.low_state.quaternion = [1, 0, 0, 0] # wxyz
         self.low_cmd.contact = [1, 1]
-        self.foot_radius = 0.055
+        self.foot_radius = 0.058
         self.gravity = np.array([0, 0, -9.81])
         self.hip_pos_body_frame = np.array([0.05556, -0.105, -0.2602,
                                             0.05556,  0.105, -0.2602]).reshape(2, 3)\
@@ -87,19 +85,20 @@ class Tron1LinefootBridge(Lcm2MujocoBridge):
 
         pf, vf = self.calculate_foot_position_and_velocity() # body frame
         # Correct based on foot contact
+        # print(f"phase: {self.low_cmd.contact[0]:.2f}, {self.low_cmd.contact[1]:.2f}")
         for idx in range(self.num_legs):
             if self.low_cmd.contact[idx] > 0.2:
             # if self.low_state.foot_force[idx*2] > 10:
                 foot_vel_body = vf[idx]
                 foot_vel_body[-1] = 0 #! set vz to zero, vf is still not very accurate
                 vel_measured = -R_body_to_world @ (foot_vel_body + np.cross(omega_body, pf[idx]))
-                height_measured = -(R_body_to_world @ pf[idx])[2] + self.foot_radius
+                height_measured = -(R_body_to_world @ pf[idx])[2]
                 se_state = self.KF.correct(np.append(height_measured, vel_measured))
                 # se_state = self.KF.correct(np.append(self.low_state.position[2], vel_measured))
                 # print(f"FK Vel: {vel_measured}\t \
                 #         phase: {self.low_cmd.contact[idx]}\t \
                 #         force: {self.low_state.foot_force[idx]}")
-                # print(f"FK Pz: {height_measured}")
+                # print(f"FK Pz: {height_measured:.4f}")
 
         se_pos_smoothed = self.se_pos_filter.calculate_average(se_state[:3])
         se_vel_smoothed = self.se_vel_filter.calculate_average(se_state[3:])
@@ -365,7 +364,7 @@ class Tron1LinefootBridge(Lcm2MujocoBridge):
 
         p_foot = np.array([-l1 - l3*np.sin(th2 + th3) - l2*np.sin(th2),
                            np.sin(th1)*(l3*np.cos(th2 + th3) + l2*np.cos(th2)),
-                           -np.cos(th1)*(l3*np.cos(th2 + th3) + l2*np.cos(th2))]).T
+                           -np.cos(th1)*(l3*np.cos(th2 + th3) + l2*np.cos(th2)) - self.foot_radius]).T
 
         v_foot = np.array([-l2*dth2*np.cos(th2) - l3*dth2*np.cos(th2 + th3) - l3*dth3*np.cos(th2 + th3),
                            l2*dth1*np.cos(th1)*np.cos(th2) 
@@ -401,7 +400,7 @@ class Tron1LinefootBridge(Lcm2MujocoBridge):
         self.mj_data.qpos[4] = msg.quaternion[1]
         self.mj_data.qpos[5] = msg.quaternion[2]
         self.mj_data.qpos[6] = msg.quaternion[3]
-        self.mj_data.qpos[7:7+8] = msg.qj_pos
+        self.mj_data.qpos[7:7+8] = msg.qj_pos - self.joint_offsets
         self.mj_data.qvel[:] = 0
 
         # Partially update low_state
