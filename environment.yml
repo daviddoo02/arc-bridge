@@ -9,5 +9,5 @@ dependencies:
   - pinocchio = 3.4.0
   - pip:
     - inputs == 0.5
-    - mujoco == 3.2.2
+    - mujoco == 3.2.3
     - lcm == 1.5.1
