@@ -2,9 +2,15 @@ name: CI
 
 on:
   push:
-    branches: [ "package"]
+    branches-ignore:
+      - sliding
+      - tron1-dev
+      - backup-for-prof
   pull_request:
-    branches: [ "package"]
+    branches-ignore:
+      - sliding
+      - tron1-dev
+      - backup-for-prof
 
 jobs:
   test:
