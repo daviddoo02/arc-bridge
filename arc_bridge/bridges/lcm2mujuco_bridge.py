@@ -52,8 +52,10 @@ class Lcm2MujocoBridge:
 
         # LCM messages
         self.lc = lcm.LCM()
-        self.low_state = eval(self.topic_state + "_t")()
-        self.low_cmd = eval(self.topic_cmd + "_t")()
+        self.low_state_type = eval(self.topic_state + "_t")
+        self.low_state = self.low_state_type()
+        self.low_cmd_type = eval(self.topic_cmd + "_t")
+        self.low_cmd = self.low_cmd_type()
         self.lcm_handle_thread = None
 
         self.low_cmd_received = False
@@ -79,7 +81,7 @@ class Lcm2MujocoBridge:
         if self.mj_data is None:
             return
 
-        self.low_cmd = eval(self.topic_cmd + "_t").decode(data)
+        self.low_cmd = self.low_cmd_type.decode(data)
         self.low_cmd_received = True
 
     @abstractmethod
