@@ -63,14 +63,6 @@ class Lcm2MujocoBridge:
 
         # Gamepad controller
         self.gamepad = None
-        self.gamepad_cmd = gamepad_cmd_t()
-        self.topic_gamepad = "gamepad_cmd"
-        try:
-            # TODO the gamepad reading thread may not exit properly
-            self.gamepad = Gamepad(0.5, 0.5, np.pi / 2)
-            print("=> Gamepad found")
-        except:
-            print("=> No gamepad found")
 
         # Joint zero pos offsets
         self.joint_offsets = np.zeros(self.num_motor)
@@ -115,6 +107,15 @@ class Lcm2MujocoBridge:
     def stop_lcm_thread(self):
         self.is_running = False
         self.lcm_handle_thread.join()
+
+    def start_gamepad_thread(self):
+        try:
+            self.gamepad = Gamepad(0.5, 0.5, np.pi / 2)
+            self.gamepad_cmd = gamepad_cmd_t()
+            self.topic_gamepad = "gamepad_cmd"
+            print("=> Gamepad found")
+        except:
+            print("=> No gamepad found")
 
     def parse_common_low_state(self):
         if self.mj_data is None:

@@ -62,13 +62,10 @@ class Gamepad:
         self.read_thread.start()
 
     def read_loop(self):
-        """The read loop for events.
-
-        This funnction should be executed in a separate thread for continuous
-        event recording.
-        """
+        """The read loop for events."""
         while self.is_running:  # and not self.estop_flagged:
             try:
+                #! TODO this is a blocking call, may need to force a timeout
                 events = self.gamepad.read()
                 for event in events:
                     # print(event.ev_type, event.code, event.state)

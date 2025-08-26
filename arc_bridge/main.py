@@ -16,7 +16,7 @@ def signal_handler(signal, frame):
     bridge.is_running = False
 
 
-def SimulationThread():
+def simulate_mujoco():
     next_time = time.perf_counter()
     while viewer.is_running() and bridge.is_running:
         if args.block and not bridge.low_cmd_received:
@@ -24,6 +24,7 @@ def SimulationThread():
         else:
             with viewer.lock():
                 mujoco.mj_step(mj_model, mj_data)
+
             bridge.publish_gamepad_cmd()
             if not args.replay:
                 bridge.publish_low_state(bridge.topic_state)
@@ -58,6 +59,7 @@ def main():
     parser.add_argument("--replay", action="store_true", help="replay state trajectory from LCM")
     parser.add_argument("--debug", action="store_true", help="debug mode")
     parser.add_argument("--busywait", action="store_true", help="busywait in simulation thread")
+    parser.add_argument("--use_gamepad", action="store_true", help="use gamepad to control the robot")
     args = parser.parse_args()
 
     # Select robot type
@@ -118,7 +120,10 @@ def main():
 
     # Start threads
     bridge.start_lcm_thread()
-    sim_thread = Thread(target=SimulationThread, daemon=True)
+    if args.use_gamepad:
+        bridge.start_gamepad_thread()
+
+    sim_thread = Thread(target=simulate_mujoco, daemon=True)
     sim_thread.start()
 
     while viewer.is_running() and bridge.is_running:
