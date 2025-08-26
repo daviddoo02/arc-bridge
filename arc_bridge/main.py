@@ -1,18 +1,24 @@
+import time
+import signal
+import argparse
+from threading import Thread
+
 import mujoco
 import mujoco.viewer
-
-import time
-from threading import Thread
-import argparse
-
 import numpy as np
 
 from arc_bridge.config import Config
 from arc_bridge.bridges import *
 
+
+def signal_handler(signal, frame):
+    print("\nCTRL-C received, exiting...")
+    bridge.is_running = False
+
+
 def SimulationThread():
     next_time = time.perf_counter()
-    while viewer.is_running():
+    while viewer.is_running() and bridge.is_running:
         if args.block and not bridge.low_cmd_received:
             bridge.publish_low_state(bridge.topic_state)
         else:
@@ -31,51 +37,16 @@ def SimulationThread():
         next_time += mj_model.opt.timestep
         remaining = next_time - time.perf_counter()
         if remaining > 0:
-            time.sleep(remaining)
+            if args.busywait:
+                while time.perf_counter() < next_time:
+                    time.sleep(0)  # Yield to other threads
+            else:
+                time.sleep(remaining)
         else:
             # Over-ran, skip sleep to catch up
             next_time = time.perf_counter()
 
     print("Simulation thread exited")
-
-
-def ViewerThread():
-    while viewer.is_running():
-        # Add geom of estimated position and velocity
-        if bridge.vis_se:
-            viewer.user_scn.ngeom = 0
-            mujoco.mjv_initGeom(
-                viewer.user_scn.geoms[0],
-                type=mujoco.mjtGeom.mjGEOM_BOX,
-                size=bridge.vis_box_size,
-                pos=bridge.vis_pos_est,
-                mat=bridge.vis_R_body.flatten(),
-                rgba=[1, 0, 0, 0.3]
-            )
-            mujoco.mjv_initGeom(
-                viewer.user_scn.geoms[1],
-                type=mujoco.mjtGeom.mjGEOM_ARROW,
-                size=np.zeros(3),
-                pos=np.zeros(3),
-                mat=np.zeros(9),
-                rgba=[0, 0, 1, 1]
-            )
-            mujoco.mjv_connector( # scn, type, width, from, to
-                viewer.user_scn.geoms[1],
-                mujoco.mjtGeom.mjGEOM_ARROW, 
-                0.02,
-                bridge.vis_pos_est, 
-                bridge.vis_pos_est + bridge.vis_vel_est*2)
-            viewer.user_scn.ngeom = 2
-
-        with viewer.lock():
-            # Turn state_only on to make sync() really fast.
-            # No mj_model modification on the fly is allowed instead.
-            viewer.sync(state_only=True) # state_only is introduced in mujoco 3.3.4
-
-        time.sleep(Config.dt_viewer)
-
-    print("Viewer thread exited")
 
 
 def main():
@@ -86,6 +57,7 @@ def main():
     parser.add_argument("--track", action="store_true", help="make camera track the robot's motion")
     parser.add_argument("--replay", action="store_true", help="replay state trajectory from LCM")
     parser.add_argument("--debug", action="store_true", help="debug mode")
+    parser.add_argument("--busywait", action="store_true", help="busywait in simulation thread")
     args = parser.parse_args()
 
     # Select robot type
@@ -137,21 +109,55 @@ def main():
     else:
         bridge.register_low_cmd_subscriber(bridge.topic_cmd)
 
+    # Handle SIGINT to exit gracefully
+    signal.signal(signal.SIGINT, signal_handler)
+
     # Reset data keyframe
     mujoco.mj_resetDataKeyframe(mj_model, mj_data, 0)
     mujoco.mj_step(mj_model, mj_data)
 
     # Start threads
     bridge.start_lcm_thread()
-
-    viewer_thread = Thread(target=ViewerThread, daemon=True)
     sim_thread = Thread(target=SimulationThread, daemon=True)
-
-    viewer_thread.start()
     sim_thread.start()
 
-    # Wait for threads to exit after viewer is closed
-    viewer_thread.join()
+    while viewer.is_running() and bridge.is_running:
+        # Add geom of estimated position and velocity
+        if bridge.vis_se:
+            viewer.user_scn.ngeom = 0
+            mujoco.mjv_initGeom(
+                viewer.user_scn.geoms[0],
+                type=mujoco.mjtGeom.mjGEOM_BOX,
+                size=bridge.vis_box_size,
+                pos=bridge.vis_pos_est,
+                mat=bridge.vis_R_body.flatten(),
+                rgba=[1, 0, 0, 0.3]
+            )
+            mujoco.mjv_initGeom(
+                viewer.user_scn.geoms[1],
+                type=mujoco.mjtGeom.mjGEOM_ARROW,
+                size=np.zeros(3),
+                pos=np.zeros(3),
+                mat=np.zeros(9),
+                rgba=[0, 0, 1, 1]
+            )
+            mujoco.mjv_connector( # scn, type, width, from, to
+                viewer.user_scn.geoms[1],
+                mujoco.mjtGeom.mjGEOM_ARROW, 
+                0.02,
+                bridge.vis_pos_est, 
+                bridge.vis_pos_est + bridge.vis_vel_est*0.5)
+            viewer.user_scn.ngeom = 2
+
+        with viewer.lock():
+            # Turn state_only on to make sync() really fast.
+            # No mj_model modification on the fly is allowed instead.
+            viewer.sync(state_only=True) # state_only is introduced in mujoco 3.3.4
+
+        time.sleep(Config.dt_viewer)
+
+    # Wait for threads to exit
+    viewer.close()
     sim_thread.join()
     bridge.stop_lcm_thread()
 

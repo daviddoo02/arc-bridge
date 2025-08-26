@@ -66,6 +66,7 @@ class Lcm2MujocoBridge:
         self.gamepad_cmd = gamepad_cmd_t()
         self.topic_gamepad = "gamepad_cmd"
         try:
+            # TODO the gamepad reading thread may not exit properly
             self.gamepad = Gamepad(0.5, 0.5, np.pi / 2)
             print("=> Gamepad found")
         except:
@@ -104,6 +105,8 @@ class Lcm2MujocoBridge:
         while self.is_running:
             self.lc.handle_timeout(0)
 
+        print("LCM thread exited")
+
     def start_lcm_thread(self):
         self.is_running = True
         self.lcm_handle_thread = Thread(target=self.lcm_handle_loop, daemon=True)
@@ -112,7 +115,6 @@ class Lcm2MujocoBridge:
     def stop_lcm_thread(self):
         self.is_running = False
         self.lcm_handle_thread.join()
-        print("LCM thread exited")
 
     def parse_common_low_state(self):
         if self.mj_data is None:

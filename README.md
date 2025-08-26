@@ -3,12 +3,6 @@ The ARC Bridge is a cross-platform software bridge of a nominal robot controller
 
 <img src="images/arc_bridge.png" width="400">
 
-## TODOs
-- [x] Support CI via GitHub action
-- [x] Automate installation steps on Windows
-- [x] Verify installation steps on macOS
-- [x] Document how to add a custom robot
-- [ ] Add a flag to turn state estimator (if applicable) on/off
 
 ## Quick Start
 1. Make sure you have java installed. Type `javac` to verify.
@@ -156,6 +150,14 @@ The ARC Bridge is a cross-platform software bridge of a nominal robot controller
     </summary>
 
 Use `mjpython` instead of `python` to launch the bridge.
+</details>
+
+<details>
+    <summary>  
+        <b> For Windows users </b>
+    </summary>
+
+Use `arc-bridge --busywait` to avoid inaccurate system clock resolutions.
 </details>
 
 <details>
